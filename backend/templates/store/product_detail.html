@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6">
+        <!-- Immagine principale -->
+        <img id="main-image"
+             src="{% if product.images.first %}{{ product.images.first.image.url }}{% else %}https://via.placeholder.com/600x400.png?text=No+Image{% endif %}"
+             class="img-fluid mb-3"
+             alt="{{ product.name }}"
+             style="width: 400px; height: 400px; object-fit: contain;">
+
+        <!-- Miniature -->
+        <div class="d-flex flex-row gap-2">
+            {% for img in product.images.all %}
+                <img src="{{ img.image.url }}"
+                     class="img-thumbnail"
+                     style="height: 80px; width: auto; cursor: pointer;"
+                     onclick="document.getElementById('main-image').src='{{ img.image.url }}'">
+            {% endfor %}
+        </div>
+    </div>
+    <div class="col-md-6">
+        <h1>{{ product.name }}</h1>
+        <p class="lead text-muted">{{ product.category.name }}</p>
+        <hr>
+        <h3>${{ product.price }}</h3>
+        <p>{{ product.description }}</p>
+        <p>
+            {% if product.stock > 0 %}
+                <span class="badge bg-success">In Stock ({{ product.stock }} left)</span>
+            {% else %}
+                <span class="badge bg-danger">Out of Stock</span>
+            {% endif %}
+        </p>
+        {% if product.stock > 0 %}
+        <form action="{% url 'add_to_cart' product.id %}" method="POST">
+            {% csrf_token %}
+            <div class="input-group mb-3" style="max-width: 200px;">
+                <label class="input-group-text" for="quantity">Quantity</label>
+                <input type="number" name="quantity" class="form-control" value="1" min="1" max="{{ product.stock }}" id="quantity">
+            </div>
+            <button type="submit" class="btn btn-primary">Add to Cart</button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

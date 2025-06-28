@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <div class="col-md-8 offset-md-2">
+    <h2 class="mb-4">
+      {% if form.instance.pk %}
+        Edit Product: {{ form.instance.name }}
+      {% else %}
+        Add a New Product
+      {% endif %}
+    </h2>
+
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+
+      {{ form.as_p }}
+
+      <h5 class="mt-4">Immagini del prodotto</h5>
+      {{ formset.management_form }}
+      {% for img_form in formset.forms %}
+        <div class="mb-3">
+          {{ img_form.image.label_tag }}
+          {{ img_form.image }}
+
+          {% if img_form.instance.pk %}
+            <div class="form-check">
+              {{ img_form.DELETE }}
+              <label class="form-check-label">Elimina immagine</label>
+            </div>
+          {% endif %}
+        </div>
+      {% endfor %}
+
+      <div class="mt-3">
+        <button type="submit" class="btn btn-primary">
+          {% if form.instance.pk %}Aggiorna{% else %}Salva{% endif %} Prodotto
+        </button>
+        <a href="{% url 'product_list' %}" class="btn btn-secondary">Annulla</a>
+      </div>
+    </form>
+  </div>
+{% endblock %}
