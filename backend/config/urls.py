@@ -28,7 +28,7 @@ urlpatterns = [
     # Auth URLs
     path('register/', user_views.register, name='register'),
     path('login/', auth_views.LoginView.as_view(template_name='registration/login.html'), name='login'),
-    path('logout/', auth_views.LogoutView.as_view(), name='logout'),
+    path('logout/', auth_views.LogoutView.as_view(next_page='/'), name='logout'),
 
     # App URLs
     path('', include('store.urls')),  # This should come after specific auth URLs
