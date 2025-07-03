@@ -1,42 +1,520 @@
+<!-- templates/store/product_form.html -->
 {% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    .image-row {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+        background-color: #f8f9fa;
+        transition: all 0.3s ease;
+    }
+    
+    .image-row:hover {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .delete-btn {
+        background-color: #dc3545;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+    }
+
+    .delete-btn:hover {
+        background-color: #c82333;
+        transform: scale(1.1);
+    }
+
+    .add-image-btn {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        border: none;
+        color: white;
+        padding: 12px 20px;
+        border-radius: 8px;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+    .add-image-btn:hover {
+        background: linear-gradient(135deg, #218838, #1ea088);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(40,167,69,0.3);
+    }
+
+    .image-preview {
+        max-width: 100px;
+        max-height: 100px;
+        border-radius: 8px;
+        border: 2px solid #dee2e6;
+        object-fit: cover;
+    }
+
+    .existing-image {
+        position: relative;
+        display: inline-block;
+        margin-right: 10px;
+        margin-bottom: 10px;
+    }
+
+    .existing-image img {
+        max-width: 120px;
+        max-height: 120px;
+        border-radius: 8px;
+        object-fit: cover;
+    }
+
+    .existing-image .delete-existing-btn {
+        position: absolute;
+        top: -10px;
+        right: -10px;
+        background-color: #dc3545;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        font-size: 12px;
+    }
+
+    .required-indicator {
+        color: #dc3545;
+        font-weight: bold;
+    }
+
+    .form-section {
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    .section-title {
+        color: #495057;
+        border-bottom: 2px solid #007bff;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+    }
+
+    .marked-for-deletion {
+        position: relative;
+    }
+
+    .marked-for-deletion::after {
+        content: "ELIMINA";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: rgba(220, 53, 69, 0.9);
+        color: white;
+        padding: 5px 10px;
+        border-radius: 4px;
+        font-weight: bold;
+        font-size: 12px;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-  <div class="col-md-8 offset-md-2">
-    <h2 class="mb-4">
-      {% if form.instance.pk %}
-        Edit Product: {{ form.instance.name }}
-      {% else %}
-        Add a New Product
-      {% endif %}
-    </h2>
+<div class="col-md-8 offset-md-2">
+    <div class="form-section">
+        <h2 class="mb-4 text-center">
+            <i class="fas fa-{% if form.instance.pk %}edit{% else %}plus-circle{% endif %} text-primary me-2"></i>
+            {% if form.instance.pk %}
+                Modifica Prodotto: {{ form.instance.name }}
+            {% else %}
+                Aggiungi Nuovo Prodotto
+            {% endif %}
+        </h2>
 
-    <form method="post" enctype="multipart/form-data">
-      {% csrf_token %}
+        <form id="productForm" method="post" enctype="multipart/form-data">
+            {% csrf_token %}
 
-      {{ form.as_p }}
+            <!-- Sezione Informazioni Prodotto -->
+            <div class="form-section">
+                <h5 class="section-title">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Informazioni Prodotto
+                </h5>
 
-      <h5 class="mt-4">Immagini del prodotto</h5>
-      {{ formset.management_form }}
-      {% for img_form in formset.forms %}
-        <div class="mb-3">
-          {{ img_form.image.label_tag }}
-          {{ img_form.image }}
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.category.id_for_label }}" class="form-label">
+                            {{ form.category.label }} <span class="required-indicator">*</span>
+                        </label>
+                        {{ form.category }}
+                        {% if form.category.errors %}
+                            <div class="text-danger">{{ form.category.errors }}</div>
+                        {% endif %}
+                    </div>
 
-          {% if img_form.instance.pk %}
-            <div class="form-check">
-              {{ img_form.DELETE }}
-              <label class="form-check-label">Elimina immagine</label>
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.name.id_for_label }}" class="form-label">
+                            {{ form.name.label }} <span class="required-indicator">*</span>
+                        </label>
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                            <div class="text-danger">{{ form.name.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="{{ form.description.id_for_label }}" class="form-label">
+                        {{ form.description.label }}
+                    </label>
+                    {{ form.description }}
+                    {% if form.description.errors %}
+                        <div class="text-danger">{{ form.description.errors }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.price.id_for_label }}" class="form-label">
+                            {{ form.price.label }} <span class="required-indicator">*</span>
+                        </label>
+                        {{ form.price }}
+                        {% if form.price.errors %}
+                            <div class="text-danger">{{ form.price.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="{{ form.stock.id_for_label }}" class="form-label">
+                            {{ form.stock.label }} <span class="required-indicator">*</span>
+                        </label>
+                        {{ form.stock }}
+                        {% if form.stock.errors %}
+                            <div class="text-danger">{{ form.stock.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
-          {% endif %}
-        </div>
-      {% endfor %}
 
-      <div class="mt-3">
-        <button type="submit" class="btn btn-primary">
-          {% if form.instance.pk %}Aggiorna{% else %}Salva{% endif %} Prodotto
-        </button>
-        <a href="{% url 'product_list' %}" class="btn btn-secondary">Annulla</a>
-      </div>
-    </form>
-  </div>
+            <!-- Sezione Immagini -->
+            <div class="form-section">
+                <h5 class="section-title">
+                    <i class="fas fa-images me-2"></i>
+                    Immagini del Prodotto <span class="required-indicator">*</span>
+                </h5>
+                <p class="text-muted mb-3">
+                    <i class="fas fa-info-circle me-1"></i>
+                    È richiesta almeno una foto del prodotto
+                </p>
+
+                <!-- Immagini Esistenti (per modifica) -->
+                {% if existing_images %}
+                <div class="mb-4">
+                    <h6>Immagini Attuali:</h6>
+                    <div class="existing-images-container">
+                        {% for image in existing_images %}
+                        <div class="existing-image">
+                            <img src="{{ image.image.url }}" alt="Immagine prodotto">
+                            <button type="button" class="delete-existing-btn"
+                                    onclick="markImageForDeletion({{ image.id }}, this)">
+                                <i class="fas fa-times"></i>
+                            </button>
+                            <input type="hidden" name="delete_image" value="" id="delete_{{ image.id }}">
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Nuove Immagini -->
+                <div id="imageContainer">
+                    <!-- Le immagini saranno generate dinamicamente -->
+                </div>
+
+                <div class="text-center mt-3">
+                    <button type="button" class="btn add-image-btn" id="addImageBtn">
+                        <i class="fas fa-plus me-2"></i>
+                        Aggiungi {% if existing_images %}Altra{% endif %} Immagine
+                    </button>
+                </div>
+            </div>
+
+            <!-- Pulsanti di Azione -->
+            <div class="text-center mt-4">
+                <button type="submit" class="btn btn-primary btn-lg me-3">
+                    <i class="fas fa-save me-2"></i>
+                    {% if form.instance.pk %}Aggiorna{% else %}Salva{% endif %} Prodotto
+                </button>
+                <a href="{% url 'product_list' %}" class="btn btn-secondary btn-lg">
+                    <i class="fas fa-times me-2"></i>
+                    Annulla
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+class ImageManager {
+    constructor() {
+        this.imageCount = 0;
+        this.container = document.getElementById('imageContainer');
+        this.addBtn = document.getElementById('addImageBtn');
+        this.form = document.getElementById('productForm');
+        this.hasExistingImages = {{ existing_images|length|default:0 }};
+        this.existingImagesCount = this.hasExistingImages;
+
+        this.init();
+    }
+
+    init() {
+        // Se non ci sono immagini esistenti, aggiungi la prima immagine obbligatoria
+        if (this.existingImagesCount === 0) {
+            this.addImageField();
+        }
+
+        // Event listeners
+        this.addBtn.addEventListener('click', () => this.addImageField());
+        this.form.addEventListener('submit', (e) => this.validateForm(e));
+    }
+
+    addImageField() {
+        this.imageCount++;
+
+        const imageRow = document.createElement('div');
+        imageRow.className = 'image-row';
+        imageRow.dataset.imageId = this.imageCount;
+
+        const isFirstAndNoExisting = this.imageCount === 1 && this.existingImagesCount === 0;
+        const requiredAttr = isFirstAndNoExisting ? 'required' : '';
+        const requiredLabel = isFirstAndNoExisting ? '<span class="required-indicator">*</span>' : '';
+
+        imageRow.innerHTML = `
+            <div class="row align-items-center">
+                <div class="col-md-3">
+                    <label class="form-label fw-bold">
+                        Nuova Immagine ${this.imageCount} ${requiredLabel}
+                    </label>
+                </div>
+                <div class="col-md-6">
+                    <input type="file"
+                           class="form-control image-input"
+                           name="image_${this.imageCount}"
+                           accept="image/*"
+                           ${requiredAttr}
+                           onchange="imageManager.previewImage(this, ${this.imageCount})">
+                </div>
+                <div class="col-md-2">
+                    <div id="preview_${this.imageCount}" class="image-preview-container"></div>
+                </div>
+                <div class="col-md-1 text-end">
+                    ${(this.imageCount > 1 || this.existingImagesCount > 0) ? `
+                        <button type="button"
+                                class="delete-btn"
+                                onclick="imageManager.removeImageField(${this.imageCount})"
+                                title="Rimuovi immagine">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+
+        this.container.appendChild(imageRow);
+
+        // Animazione di entrata
+        setTimeout(() => {
+            imageRow.style.opacity = '0';
+            imageRow.style.transform = 'translateY(-20px)';
+            imageRow.style.transition = 'all 0.3s ease';
+
+            setTimeout(() => {
+                imageRow.style.opacity = '1';
+                imageRow.style.transform = 'translateY(0)';
+            }, 10);
+        }, 10);
+    }
+
+    removeImageField(imageId) {
+        const imageRow = document.querySelector(`[data-image-id="${imageId}"]`);
+        if (imageRow) {
+            // Controlla se è l'ultima immagine rimasta e non ci sono immagini esistenti
+            const remainingNewImages = this.container.querySelectorAll('.image-row').length;
+            const existingImagesCount = document.querySelectorAll('.existing-image:not(.marked-for-deletion)').length;
+
+            if (remainingNewImages <= 1 && existingImagesCount === 0) {
+                alert('È richiesta almeno una immagine per il prodotto!');
+                return;
+            }
+
+            // Animazione di uscita
+            imageRow.style.transition = 'all 0.3s ease';
+            imageRow.style.opacity = '0';
+            imageRow.style.transform = 'translateX(-100%)';
+
+            setTimeout(() => {
+                imageRow.remove();
+                this.renumberImages();
+            }, 300);
+        }
+    }
+
+    renumberImages() {
+        const imageRows = this.container.querySelectorAll('.image-row');
+        imageRows.forEach((row, index) => {
+            const newNumber = index + 1;
+            const label = row.querySelector('label');
+            const input = row.querySelector('input');
+            const preview = row.querySelector('.image-preview-container');
+
+            // Aggiorna etichetta
+            const isFirstAndNoExisting = newNumber === 1 && this.existingImagesCount === 0;
+            if (isFirstAndNoExisting) {
+                label.innerHTML = `Nuova Immagine ${newNumber} <span class="required-indicator">*</span>`;
+                input.setAttribute('required', '');
+            } else {
+                label.innerHTML = `Nuova Immagine ${newNumber}`;
+                input.removeAttribute('required');
+            }
+
+            // Aggiorna attributi
+            input.name = `image_${newNumber}`;
+            preview.id = `preview_${newNumber}`;
+            row.dataset.imageId = newNumber;
+
+            // Aggiorna pulsante delete
+            const deleteBtn = row.querySelector('.delete-btn');
+            if (deleteBtn) {
+                deleteBtn.setAttribute('onclick', `imageManager.removeImageField(${newNumber})`);
+            }
+        });
+
+        this.imageCount = imageRows.length;
+    }
+
+    previewImage(input, imageId) {
+        const previewContainer = document.getElementById(`preview_${imageId}`);
+
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+
+            reader.onload = (e) => {
+                previewContainer.innerHTML = `
+                    <img src="${e.target.result}"
+                         class="image-preview"
+                         alt="Anteprima">
+                `;
+            }
+
+            reader.readAsDataURL(input.files[0]);
+        } else {
+            previewContainer.innerHTML = '';
+        }
+    }
+
+    validateForm(e) {
+        // Controlla immagini esistenti non eliminate
+        const activeExisting = this.existingImagesCount -
+            document.querySelectorAll('.marked-for-deletion').length;
+
+        // Controlla nuove immagini caricate
+        let hasNewImage = false;
+        this.container.querySelectorAll('.image-input').forEach(input => {
+            if (input.files && input.files.length > 0) {
+                hasNewImage = true;
+            }
+        });
+
+        if (activeExisting === 0 && !hasNewImage) {
+            e.preventDefault();
+            alert('È necessario caricare almeno una immagine del prodotto!');
+            // Scroll alla sezione immagini
+            document.querySelector('.form-section:nth-child(2)').scrollIntoView({
+                behavior: 'smooth'
+            });
+            return false;
+        }
+    }
+}
+
+// Funzione per marcare le immagini esistenti per l'eliminazione
+function markImageForDeletion(imageId, button) {
+    const existingImageDiv = button.parentElement;
+    const hiddenInput = document.getElementById(`delete_${imageId}`);
+
+    // Se stiamo per eliminare (non è ancora marcato)
+    if (!existingImageDiv.classList.contains('marked-for-deletion')) {
+        // Conta immagini esistenti attive
+        const activeExisting = document.querySelectorAll('.existing-image:not(.marked-for-deletion)').length;
+
+        // Controlla nuove immagini
+        let hasNewImage = false;
+        document.querySelectorAll('.image-input').forEach(input => {
+            if (input.files && input.files.length > 0) {
+                hasNewImage = true;
+            }
+        });
+
+        // Se è l'ultima immagine esistente e non ci sono nuove immagini
+        if (activeExisting === 1 && !hasNewImage) {
+            alert('È richiesta almeno una immagine per il prodotto!');
+            return;
+        }
+    }
+
+    // Toggle stato di eliminazione
+    if (existingImageDiv.classList.contains('marked-for-deletion')) {
+        // Ripristina immagine
+        existingImageDiv.classList.remove('marked-for-deletion');
+        existingImageDiv.style.opacity = '1';
+        button.innerHTML = '<i class="fas fa-times"></i>';
+        button.title = 'Elimina immagine';
+        hiddenInput.value = '';
+    } else {
+        // Marca per eliminazione
+        existingImageDiv.classList.add('marked-for-deletion');
+        existingImageDiv.style.opacity = '0.5';
+        button.innerHTML = '<i class="fas fa-undo"></i>';
+        button.title = 'Ripristina immagine';
+        hiddenInput.value = imageId;
+    }
+}
+
+// Inizializza il manager delle immagini
+const imageManager = new ImageManager();
+
+// Validazione in tempo reale del form
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('productForm');
+    const inputs = form.querySelectorAll('input[required], select[required], textarea[required]');
+
+    inputs.forEach(input => {
+        // Applica le classi Bootstrap ai campi del form
+        if (input.type !== 'file') {
+            input.classList.add('form-control');
+        }
+        if (input.tagName === 'SELECT') {
+            input.classList.add('form-select');
+        }
+
+        input.addEventListener('blur', function() {
+            if (this.value.trim() === '') {
+                this.classList.add('is-invalid');
+            } else {
+                this.classList.remove('is-invalid');
+                this.classList.add('is-valid');
+            }
+        });
+    });
+});
+</script>
 {% endblock %}
