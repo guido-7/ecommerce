@@ -1,12 +1,16 @@
-from django.shortcuts import redirect, render
+from django.shortcuts import render, redirect
+from django.urls import reverse_lazy, reverse
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
-from django.urls import reverse_lazy
-from django.contrib import messages
 from django.contrib.auth.mixins import UserPassesTestMixin
-from django.forms.models import inlineformset_factory
+from django.contrib import messages
+from django.db.models import Q, Count, Prefetch
+from django.utils.text import slugify
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+
+from . import models
 from .models import Product, Category, ProductImage
-
-
+from orders.models import Order, OrderItem
+from .forms import CategoryForm
 
 class ProductListView(ListView):
     model = Product
@@ -43,6 +47,8 @@ class ProductDetailView(DetailView):
     template_name = 'store/product_detail.html'
     context_object_name = 'product'
 
+# === CART MANAGEMENT ===
+
 def add_to_cart(request, product_id):
     if request.method == 'POST':
         quantity = int(request.POST.get('quantity', 1))
@@ -70,10 +76,15 @@ def view_cart(request):
     cart = request.session.get('cart', {})
     cart_items = []
     total_price = 0
+    total_savings = 0
 
     for product_id, item_data in cart.items():
         product = Product.objects.get(id=product_id)
-        total_item_price = product.price * item_data['quantity']
+        actual_price = product.get_actual_price()
+        total_item_price = actual_price * item_data['quantity']
+        if product.discounted_price:
+            total_savings += (product.price - product.discounted_price) * item_data['quantity']
+
         cart_items.append({
             'product': product,
             'quantity': item_data['quantity'],
@@ -81,7 +92,14 @@ def view_cart(request):
         })
         total_price += total_item_price
 
-    return render(request, 'store/cart.html', {'cart_items': cart_items, 'total_price': total_price})
+    installment_amount = total_price / 3 if total_price > 0 else 0
+
+    return render(request, 'store/cart.html', {
+        'cart_items': cart_items,
+        'total_price': total_price,
+        'total_savings': total_savings,
+        'installment_amount': installment_amount
+    })
 
 def remove_from_cart(request, product_id):
     cart = request.session.get('cart', {})
@@ -90,6 +108,38 @@ def remove_from_cart(request, product_id):
         request.session['cart'] = cart
         messages.success(request, "Item removed from cart.")
     return redirect('view_cart')
+
+
+def update_cart_quantity(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+    cart = request.session.get('cart', {})
+    product_id_str = str(product_id)
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        if product_id_str in cart:
+            if action == 'increase':
+                # Controlla che non si superi la disponibilità
+                if cart[product_id_str]['quantity'] < product.stock:
+                    cart[product_id_str]['quantity'] += 1
+                else:
+                    messages.error(request,
+                                   f"Non è possibile aggiungere altre unità di {product.name}. Disponibilità massima raggiunta.")
+            elif action == 'decrease':
+                if cart[product_id_str]['quantity'] > 1:
+                    cart[product_id_str]['quantity'] -= 1
+                else:
+                    # Se la quantità è 1 e si clicca su diminuisci, rimuovi il prodotto
+                    return redirect('remove_from_cart', product_id=product_id)
+
+            request.session['cart'] = cart
+            messages.success(request, "Carrello aggiornato")
+        else:
+            messages.error(request, "Prodotto non trovato nel carrello")
+
+    return redirect('view_cart')
+
 
 class StoreManagerRequiredMixin(UserPassesTestMixin):
     def test_func(self):
@@ -101,41 +151,407 @@ class ProductCreateView(StoreManagerRequiredMixin, CreateView):
     template_name = 'store/product_form.html'
     success_url = reverse_lazy('product_list')
 
-    # Creo l’inline formset per ProductImage
-    ImageFormSet = inlineformset_factory(
-        Product,
-        ProductImage,
-        fields=['image'],
-        extra=3,          # quante righe vuote
-        can_delete=True   # possibilità di eliminare
-    )
-
-    def get(self, request, *args, **kwargs):
-        # form principale + formset immagini
-        form = self.get_form()
-        formset = self.ImageFormSet()
-        return render(request, self.template_name, {'form': form, 'formset': formset})
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Per la creazione, non ci sono immagini esistenti
+        context['existing_images'] = []
+        return context
 
     def post(self, request, *args, **kwargs):
         form = self.get_form()
-        formset = self.ImageFormSet(request.POST, request.FILES)
-        if form.is_valid() and formset.is_valid():
-            # salvo il prodotto
+
+        if form.is_valid():
+            # Controlla che ci sia almeno una immagine
+            image_files = []
+            for key, file in request.FILES.items():
+                if key.startswith('image_') and file:
+                    image_files.append(file)
+
+            if not image_files:
+                messages.error(request, 'È richiesta almeno una immagine per il prodotto.')
+                return render(request, self.template_name, {
+                    'form': form,
+                    'existing_images': []
+                })
+
+            # Salva il prodotto
             product = form.save()
-            # associo il formset al prodotto appena creato
-            formset.instance = product
-            formset.save()
+
+            # Salva le immagini
+            for image_file in image_files:
+                ProductImage.objects.create(
+                    product=product,
+                    image=image_file
+                )
+
+            messages.success(request, f'Prodotto "{product.name}" creato con successo!')
             return redirect(self.success_url)
-        # se c’è un errore, ricarico template con form e formset validati
-        return render(request, self.template_name, {'form': form, 'formset': formset})
+
+        return render(request, self.template_name, {
+            'form': form,
+            'existing_images': []
+        })
+
 
 class ProductUpdateView(StoreManagerRequiredMixin, UpdateView):
     model = Product
-    fields = ['category', 'name', 'description', 'price', 'stock', 'image']
+    fields = ['category', 'name', 'description', 'price', 'stock']
     template_name = 'store/product_form.html'
     success_url = reverse_lazy('product_list')
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['existing_images'] = self.object.images.all()
+        return context
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        form = self.get_form()
+
+        if form.is_valid():
+            # Gestione rimozione immagini esistenti
+            images_to_delete = request.POST.getlist('delete_image')
+
+            # Filtra solo i valori non vuoti
+            images_to_delete = [img_id for img_id in images_to_delete if img_id]
+
+            if images_to_delete:
+                ProductImage.objects.filter(
+                    id__in=images_to_delete,
+                    product=self.object
+                ).delete()
+
+            # Controlla nuove immagini
+            new_image_files = []
+            for key, file in request.FILES.items():
+                if key.startswith('image_') and file:
+                    new_image_files.append(file)
+
+            # Controlla che rimanga almeno una immagine
+            remaining_images = self.object.images.exclude(id__in=images_to_delete).count()
+            total_images = remaining_images + len(new_image_files)
+
+            if total_images == 0:
+                messages.error(request, 'È richiesta almeno una immagine per il prodotto.')
+                return render(request, self.template_name, {
+                    'form': form,
+                    'existing_images': self.object.images.all()
+                })
+
+            # Salva il prodotto
+            product = form.save()
+
+            # Salva le nuove immagini
+            for image_file in new_image_files:
+                ProductImage.objects.create(
+                    product=product,
+                    image=image_file
+                )
+
+            messages.success(request, f'Prodotto "{product.name}" aggiornato con successo!')
+            return redirect(self.success_url)
+
+        return render(request, self.template_name, {
+            'form': form,
+            'existing_images': self.object.images.all()
+        })
+
+
 class ProductDeleteView(StoreManagerRequiredMixin, DeleteView):
+    """
+    View to delete a product with a confirmation step.
+    """
     model = Product
-    template_name = 'store/product_confirm_delete.html'
-    success_url = reverse_lazy('product_list')
+    template_name = 'store/confirm_delete.html'
+    success_url = reverse_lazy('manage')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = f'Conferma Eliminazione Prodotto'
+        context['object_name'] = self.object.name
+        context['cancel_url'] = reverse_lazy('manage')
+        return context
+
+    def form_valid(self, form):
+        messages.success(self.request, f'Prodotto "{self.object.name}" eliminato con successo.')
+        return super().form_valid(form)
+
+
+class ManageView(StoreManagerRequiredMixin, ListView):
+    """
+    Main management page with product, category, and order lists.
+    Inherits from ListView to handle pagination and filtering.
+    """
+    model = Product
+    template_name = 'store/manage.html'
+    context_object_name = 'products'
+    paginate_by = 10
+
+    def get_queryset(self):
+        """
+        Handles filtering, searching, and sorting for the product list.
+        """
+        queryset = super().get_queryset().annotate(image_count=Count('images'))
+
+        # Filtering by category
+        category_id = self.request.GET.get('category')
+        if category_id:
+            queryset = queryset.filter(category__id=category_id)
+
+        # Searching by name
+        search_query = self.request.GET.get('search')
+        if search_query:
+            queryset = queryset.filter(name__icontains=search_query)
+
+        sort_by = self.request.GET.get('sort_by', 'created_at')
+        sort_order = self.request.GET.get('sort_order', 'desc')
+
+        # Mappatura dei campi ordinabili per prodotti
+        product_sort_mapping = {
+            'id': 'id',
+            'name': 'name',
+            'category': 'category__name',
+            'price': 'price',
+            'stock': 'stock',
+            'image_count': 'image_count',
+            'created_at': 'created_at'
+        }
+
+        # Applica ordinamento
+        if sort_by in product_sort_mapping:
+            order_field = product_sort_mapping[sort_by]
+            if sort_order == 'desc':
+                order_field = f'-{order_field}'
+            queryset = queryset.order_by(order_field)
+        else:
+            # Default: ordinamento per data di creazione (più recenti prima)
+            queryset = queryset.order_by('-created_at')
+
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        """
+        Adds categories, orders, and other necessary data to the template context.
+        """
+        context = super().get_context_data(**kwargs)
+        context['all_categories'] = Category.objects.all().order_by('name')  # For the filter dropdown
+
+        # === Gestione categorie ===
+        category_search_query = self.request.GET.get('category_search')
+        category_sort_by = self.request.GET.get('category_sort_by', 'name')
+        category_sort_order = self.request.GET.get('category_sort_order', 'asc')
+
+        categories_qs = Category.objects.all()
+
+        # Filtro di ricerca per categorie
+        if category_search_query:
+            categories_qs = categories_qs.filter(name__icontains=category_search_query)
+
+        # Mappatura dei campi ordinabili per categorie
+        category_sort_mapping = {
+            'id': 'id',
+            'name': 'name',
+            'slug': 'slug'
+        }
+
+        # Sorting by categories
+        if category_sort_by in category_sort_mapping:
+            order_field = category_sort_mapping[category_sort_by]
+            if category_sort_order == 'desc':
+                order_field = f'-{order_field}'
+            categories_qs = categories_qs.order_by(order_field)
+        else:
+            # Default: sorting by name (ascending)
+            categories_qs = categories_qs.order_by('name')
+
+        context['categories'] = categories_qs
+
+        # === Gestione ordini ===
+        order_search_query = self.request.GET.get('order_search', '')
+        current_order_status = self.request.GET.get('status', '')
+        order_sort_by = self.request.GET.get('order_sort_by', '-created_at')
+        order_sort_order = self.request.GET.get('order_sort_order', 'desc')
+        items_per_page = int(self.request.GET.get('items_per_page', 25))
+        start_date = self.request.GET.get('start_date')
+        end_date = self.request.GET.get('end_date')
+
+        # Filtro stato ordine
+        orders_qs = Order.objects.all().prefetch_related(
+            Prefetch('items', queryset=OrderItem.objects.select_related('product')))
+
+        if current_order_status:
+            orders_qs = orders_qs.filter(status=current_order_status)
+
+        # Filtro ricerca ordine
+        if order_search_query:
+            orders_qs = orders_qs.filter(
+                Q(id__icontains=order_search_query) |
+                Q(user__username__icontains=order_search_query) |
+                Q(user__email__icontains=order_search_query) |
+                Q(user__first_name__icontains=order_search_query) |
+                Q(user__last_name__icontains=order_search_query)
+            )
+
+        # Filtro data ordine
+        if start_date:
+            orders_qs = orders_qs.filter(created_at__gte=start_date)
+        if end_date:
+            orders_qs = orders_qs.filter(created_at__lte=end_date)
+
+        # Ordinamento ordini
+        order_sort_mapping = {
+            'id': 'id',
+            'user': 'user__username',
+            'created_at': 'created_at',
+            'total_amount': 'total_amount',
+            'status': 'status'
+        }
+
+        # Rimuovi eventuali '-' iniziali per il mapping
+        clean_order_sort_by = order_sort_by.lstrip('-')
+        if clean_order_sort_by in order_sort_mapping:
+            order_field = order_sort_mapping[clean_order_sort_by]
+        if order_sort_order == 'desc' and not order_sort_by.startswith('-'):
+            order_field = f'-{order_field}'
+        elif order_sort_order == 'asc' and order_sort_by.startswith('-'):
+            order_field = order_field.lstrip('-')
+            orders_qs = orders_qs.order_by(order_field)
+        else:
+            # Default: ordinamento per data di creazione (più recenti prima)
+            orders_qs = orders_qs.order_by('-created_at')
+
+        # Paginazione ordini
+        order_page = self.request.GET.get('order_page', 1)
+        paginator = Paginator(orders_qs, items_per_page)
+
+        try:
+            orders = paginator.page(order_page)
+        except PageNotAnInteger:
+            orders = paginator.page(1)
+        except EmptyPage:
+            orders = paginator.page(paginator.num_pages)
+
+        context['orders'] = orders
+        context['status_choices'] = Order.OrderStatus.choices
+        context['order_search_query'] = order_search_query
+        context['current_order_status'] = current_order_status
+        context['order_sort_by'] = clean_order_sort_by
+        context['order_sort_order'] = order_sort_order
+        context['items_per_page'] = items_per_page
+        context['start_date'] = start_date
+        context['end_date'] = end_date
+
+        # Pass current filters to the template to maintain state
+        context['current_category_filter'] = self.request.GET.get('category', '')
+        context['current_search'] = self.request.GET.get('search', '')
+        context['current_category_search'] = self.request.GET.get('category_search', '')
+        context['current_sort_by'] = self.request.GET.get('sort_by', 'created_at')
+        context['current_sort_order'] = self.request.GET.get('sort_order', 'desc')
+        context['current_category_sort_by'] = self.request.GET.get('category_sort_by', 'name')
+        context['current_category_sort_order'] = self.request.GET.get('category_sort_order', 'asc')
+        context['active_tab'] = self.request.GET.get('tab', 'products')
+
+        return context
+
+class CategoryCreateView(StoreManagerRequiredMixin, CreateView):
+    """
+    View to create a new category.
+    """
+    model = Category
+    form_class = CategoryForm
+    template_name = 'store/category_form.html'
+    success_url = reverse_lazy('manage')
+
+    def form_valid(self, form):
+        """
+        Automatically generates the slug from the category name before saving.
+        """
+        category = form.save(commit=False)
+        category.slug = slugify(category.name)
+        category.save()
+        messages.success(self.request, f'Categoria "{category.name}" creata con successo!')
+        return redirect(self.success_url)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = 'Aggiungi Nuova Categoria'
+        return context
+
+
+class CategoryUpdateView(StoreManagerRequiredMixin, UpdateView):
+    """
+    View to update an existing category.
+    """
+    model = Category
+    form_class = CategoryForm
+    template_name = 'store/category_form.html'
+    success_url = reverse_lazy('manage')
+
+    def form_valid(self, form):
+        """
+        Updates the slug if the name changes.
+        """
+        category = form.save(commit=False)
+        category.slug = slugify(category.name)
+        category.save()
+        messages.success(self.request, f'Categoria "{category.name}" aggiornata con successo!')
+        return redirect(self.success_url)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = f'Modifica Categoria: {self.object.name}'
+        return context
+
+
+class CategoryDeleteView(StoreManagerRequiredMixin, DeleteView):
+    """
+    View to delete a category with a confirmation step.
+    """
+    model = Category
+    template_name = 'store/confirm_delete.html'
+    success_url = reverse_lazy('manage')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = f'Conferma Eliminazione Categoria'
+        context['object_name'] = self.object.name
+        context['cancel_url'] = reverse_lazy('manage')
+        return context
+
+    def form_valid(self, form):
+        messages.success(self.request, f'Categoria "{self.object.name}" eliminata con successo.')
+        return super().form_valid(form)
+
+
+from django.shortcuts import get_object_or_404
+
+def update_order_status(request, pk):
+    """
+    View to update the status of an order.
+    """
+    if not request.user.groups.filter(name='Store Manager').exists():
+        messages.error(request, "You don't have permission to perform this action.")
+        return redirect('manage')
+
+    order = get_object_or_404(Order, pk=pk)
+
+    if request.method == 'POST':
+        new_status = request.POST.get('status')
+
+        if new_status and new_status in dict(Order.OrderStatus.choices):
+            previous_status = order.get_status_display()
+            order.status = new_status
+            order.save()
+            messages.success(
+                request,
+                f'Order #{order.id} status updated from {previous_status} to {order.get_status_display()}'
+            )
+        else:
+            messages.error(request, 'Invalid status selected.')
+
+        # Mantieni i parametri della tab attiva
+        tab = request.GET.get('tab', 'orders')
+        page = request.GET.get('order_page', 1)
+        return redirect(f'{reverse("manage")}?tab={tab}&order_page={page}')
+
+    return redirect('manage')

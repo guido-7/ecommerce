@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import Category, Product, ProductImage
+from .models import Category, Product, ProductImage, Brand
+
 
 # Inline admin to manage ProductImage within the Product admin page
 class ProductImageInline(admin.TabularInline):
@@ -9,9 +10,10 @@ class ProductImageInline(admin.TabularInline):
 # Customized Product admin with inline images
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ('name', 'category', 'price', 'stock')
-    list_filter = ('category',)
-    search_fields = ('name', 'description')
+    list_display = ('name', 'brand', 'category', 'price', 'discounted_price', 'stock')
+    list_filter = ( 'brand', 'category')
+    search_fields = ('name', 'brand__name', 'category__name', 'description')
+    autocomplete_fields = ('brand', 'category')
     inlines = [ProductImageInline]
 
 # Category admin
@@ -19,6 +21,13 @@ class ProductAdmin(admin.ModelAdmin):
 class CategoryAdmin(admin.ModelAdmin):
     list_display = ('name', 'slug')
     prepopulated_fields = {'slug': ('name',)}
+    search_fields = ['name']
+
+@admin.register(Brand)
+class BrandAdmin(admin.ModelAdmin):
+    list_display = ('name', 'slug')
+    prepopulated_fields = {'slug': ('name',)}
+    search_fields = ['name']
 
 # Optional: separate admin for standalone Image management
 @admin.register(ProductImage)
