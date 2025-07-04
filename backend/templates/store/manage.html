@@ -93,9 +93,9 @@
                                 </select>
                             </div>
                             <div class="col-md-3">
-                                <label for="brand" class="form-label">Filtra per brand</label>
+                                <label for="brand" class="form-label">Filter by brand</label>
                                 <select name="brand" id="brand" class="form-select">
-                                    <option value="">Tutti i brand</option>
+                                    <option value="">All brands</option>
                                     {% for brand in all_brands %}
                                     <option value="{{ brand.id }}" {% if current_brand_filter|stringformat:"s" == brand.id|stringformat:"s" %}selected{% endif %}>{{ brand.name }}</option>
                                     {% endfor %}
