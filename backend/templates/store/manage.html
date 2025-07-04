@@ -140,7 +140,7 @@
                                 <td>{{ product.name }}</td>
                                 <td>{{ product.category.name }}</td>
                                 <td>{{ product.brand.name }}</td>
-                                <td>€ {{ product.price|stringformat:".2f" }}</td>
+                                <td>€ {{ product.get_actual_price|stringformat:".2f" }}</td>
                                 <td>{{ product.stock }}</td>
                                 <td>{{ product.image_count }}</td>
                                 <td>
@@ -236,9 +236,11 @@
                         <div class="row g-3 align-items-center">
                             <div class="col-md-10">
                                 <label for="brand_search" class="form-label">Search brands</label>
-                                <input type="text" name="brand_search" id="brand_search"
-                                       class="form-control" value="{{ current_brand_search }}"
-                                       placeholder="Search by name...">
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                    <input type="text" name="brand_search" id="brand_search" class="form-control"
+                                           value="{{ current_brand_search }}" placeholder="Search by name...">
+                                </div>
                             </div>
                             <div class="col-md-2 d-flex align-items-end">
                                 <button type="submit" class="btn btn-info w-100">
