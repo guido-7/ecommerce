@@ -16,7 +16,7 @@ def register(request):
                 # Handle case where group doesn't exist
                 pass
             login(request, user)
-            return redirect('home')
+            return redirect('product_list')
     else:
         form = CustomUserCreationForm()
     return render(request, 'registration/register.html', {'form': form})
