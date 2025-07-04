@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy, reverse
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import UserPassesTestMixin
@@ -8,7 +8,7 @@ from django.utils.text import slugify
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 from . import models
-from .models import Product, Category, ProductImage
+from .models import Product, ProductImage, Category, Brand
 from orders.models import Order, OrderItem
 from .forms import CategoryForm
 
@@ -298,6 +298,11 @@ class ManageView(StoreManagerRequiredMixin, ListView):
         if category_id:
             queryset = queryset.filter(category__id=category_id)
 
+        # Filtering by brand
+        brand_id = self.request.GET.get('brand')
+        if brand_id:
+            queryset = queryset.filter(brand__id=brand_id)
+
         # Searching by name
         search_query = self.request.GET.get('search')
         if search_query:
@@ -335,6 +340,7 @@ class ManageView(StoreManagerRequiredMixin, ListView):
         """
         context = super().get_context_data(**kwargs)
         context['all_categories'] = Category.objects.all().order_by('name')  # For the filter dropdown
+        context['all_brands'] = Brand.objects.all().order_by('name')  # For the filter dropdown
 
         # === Gestione categorie ===
         category_search_query = self.request.GET.get('category_search')
@@ -365,6 +371,52 @@ class ManageView(StoreManagerRequiredMixin, ListView):
             categories_qs = categories_qs.order_by('name')
 
         context['categories'] = categories_qs
+
+        # === Gestione Brand ===
+
+        brand_search_query = self.request.GET.get('brand_search', '')
+        brand_sort_by = self.request.GET.get('brand_sort_by', 'name')
+        brand_sort_order = self.request.GET.get('brand_sort_order', 'asc')
+
+        brands_qs = Brand.objects.annotate(product_count=Count('products'))
+
+        # Filtro di ricerca per brand
+        if brand_search_query:
+            brands_qs = brands_qs.filter(name__icontains=brand_search_query)
+
+        # Mappatura dei campi ordinabili per brand
+        brand_sort_mapping = {
+            'id': 'id',
+            'name': 'name',
+            'slug': 'slug',
+            'product_count': 'product_count'
+        }
+
+        # Ordinamento brand
+        if brand_sort_by in brand_sort_mapping:
+            order_field = brand_sort_mapping[brand_sort_by]
+            if brand_sort_order == 'desc':
+                order_field = f'-{order_field}'
+            brands_qs = brands_qs.order_by(order_field)
+        else:
+            # Default: ordinamento per nome (ascendente)
+            brands_qs = brands_qs.order_by('name')
+
+        # Paginazione per brand
+        brand_page = self.request.GET.get('brand_page', 1)
+        brand_paginator = Paginator(brands_qs, 10)  # 10 brand per pagina
+
+        try:
+            brands = brand_paginator.page(brand_page)
+        except PageNotAnInteger:
+            brands = brand_paginator.page(1)
+        except EmptyPage:
+            brands = brand_paginator.page(brand_paginator.num_pages)
+
+        context['brands'] = brands
+        context['brand_search_query'] = brand_search_query
+        context['brand_sort_by'] = brand_sort_by
+        context['brand_sort_order'] = brand_sort_order
 
         # === Gestione ordini ===
         order_search_query = self.request.GET.get('order_search', '')
@@ -441,17 +493,27 @@ class ManageView(StoreManagerRequiredMixin, ListView):
         context['start_date'] = start_date
         context['end_date'] = end_date
 
-        # Pass current filters to the template to maintain state
+        # Filter for orders
         context['current_category_filter'] = self.request.GET.get('category', '')
+        context['current_brand_filter'] = self.request.GET.get('brand', '')
+
         context['current_search'] = self.request.GET.get('search', '')
-        context['current_category_search'] = self.request.GET.get('category_search', '')
         context['current_sort_by'] = self.request.GET.get('sort_by', 'created_at')
         context['current_sort_order'] = self.request.GET.get('sort_order', 'desc')
+
+        context['current_category_search'] = self.request.GET.get('category_search', '')
         context['current_category_sort_by'] = self.request.GET.get('category_sort_by', 'name')
         context['current_category_sort_order'] = self.request.GET.get('category_sort_order', 'asc')
+
+        context['current_brand_search'] = self.request.GET.get('brand_search', '')
+        context['current_brand_sort_by'] = self.request.GET.get('brand_sort_by', 'name')
+        context['current_brand_sort_order'] = self.request.GET.get('brand_sort_order', 'asc')
+
         context['active_tab'] = self.request.GET.get('tab', 'products')
 
         return context
+
+# === CATEGORY MANAGEMENT ===
 
 class CategoryCreateView(StoreManagerRequiredMixin, CreateView):
     """
@@ -477,7 +539,6 @@ class CategoryCreateView(StoreManagerRequiredMixin, CreateView):
         context['page_title'] = 'Aggiungi Nuova Categoria'
         return context
 
-
 class CategoryUpdateView(StoreManagerRequiredMixin, UpdateView):
     """
     View to update an existing category.
@@ -502,7 +563,6 @@ class CategoryUpdateView(StoreManagerRequiredMixin, UpdateView):
         context['page_title'] = f'Modifica Categoria: {self.object.name}'
         return context
 
-
 class CategoryDeleteView(StoreManagerRequiredMixin, DeleteView):
     """
     View to delete a category with a confirmation step.
@@ -522,8 +582,61 @@ class CategoryDeleteView(StoreManagerRequiredMixin, DeleteView):
         messages.success(self.request, f'Categoria "{self.object.name}" eliminata con successo.')
         return super().form_valid(form)
 
+# === BRAND MANAGEMENT ===
+class BrandCreateView(StoreManagerRequiredMixin, CreateView):
+    model = Brand
+    form_class = CategoryForm
+    template_name = 'store/brand_form.html'
+    success_url = reverse_lazy('manage')
 
-from django.shortcuts import get_object_or_404
+    def form_valid(self, form):
+        brand = form.save(commit=False)
+        brand.slug = slugify(brand.name)
+        brand.save()
+        messages.success(self.request, f'Brand "{brand.name}" creato con successo!')
+        return redirect(self.success_url)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = 'Aggiungi Nuovo Brand'
+        return context
+
+class BrandUpdateView(StoreManagerRequiredMixin, UpdateView):
+    model = Brand
+    form_class = CategoryForm
+    template_name = 'store/category_form.html'
+    success_url = reverse_lazy('manage')
+
+    def form_valid(self, form):
+        brand = form.save(commit=False)
+        # Se il nome è cambiato, rigenera lo slug
+        if 'name' in form.changed_data:
+            brand.slug = slugify(brand.name)
+        brand.save()
+        messages.success(self.request, f'Brand "{brand.name}" aggiornato con successo!')
+        return redirect(self.success_url)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = f'Modifica Brand: {self.object.name}'
+        return context
+
+class BrandDeleteView(StoreManagerRequiredMixin, DeleteView):
+    model = Brand
+    template_name = 'store/confirm_delete.html'
+    success_url = reverse_lazy('manage')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['page_title'] = f'Conferma Eliminazione Brand'
+        context['object_name'] = self.object.name
+        context['cancel_url'] = reverse_lazy('manage') + '?tab=brands'
+        return context
+
+    def form_valid(self, form):
+        messages.success(self.request, f'Brand "{self.object.name}" eliminato con successo.')
+        return super().form_valid(form)
+
 
 def update_order_status(request, pk):
     """

@@ -25,5 +25,10 @@ urlpatterns = [
     path('manage/category/<int:pk>/edit/', views.CategoryUpdateView.as_view(), name='category_update'),
     path('manage/category/<int:pk>/delete/', views.CategoryDeleteView.as_view(), name='category_delete'),
 
+    # Brand CRUD
+    path('manage/brand/new/', views.BrandCreateView.as_view(), name='brand_create'),
+    path('manage/brand/<int:pk>/edit/', views.BrandUpdateView.as_view(), name='brand_update'),
+    path('manage/brand/<int:pk>/delete/', views.BrandDeleteView.as_view(), name='brand_delete'),
+
     path('order/<int:pk>/update-status/', update_order_status, name='update_order_status'),
 ]

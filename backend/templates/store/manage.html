@@ -52,6 +52,11 @@
             </button>
         </li>
         <li class="nav-item" role="presentation">
+            <button class="nav-link {% if active_tab == 'brands' %}active{% endif %}" id="brands-tab" data-bs-toggle="tab" data-bs-target="#brands" type="button" role="tab" aria-controls="categories" aria-selected="{% if active_tab == 'brands' %}true{% else %}false{% endif %}">
+                <i class="fas fa-tags me-2"></i>Brand Management
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
             <button class="nav-link {% if active_tab == 'orders' %}active{% endif %}" id="orders-tab" data-bs-toggle="tab" data-bs-target="#orders" type="button" role="tab" aria-controls="orders" aria-selected="{% if active_tab == 'orders' %}true{% else %}false{% endif %}">
                 <i class="fas fa-truck me-2"></i>Order Management
             </button>
@@ -63,28 +68,41 @@
             <div class="card mt-3">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="card-title mb-0">Elenco Prodotti</h5>
-                        <a href="{% url 'product_create' %}" class="btn btn-primary"><i class="fas fa-plus me-2"></i>Aggiungi Prodotto</a>
+                        <h5 class="card-title mb-0">Products List</h5>
+                        <a href="{% url 'product_create' %}" class="btn btn-primary"><i class="fas fa-plus me-2"></i>Add Product</a>
                     </div>
 
                     <form method="get" class="mb-4 p-3 bg-light rounded border" id="filterForm">
                         <input type="hidden" name="tab" value="products">
                         <div class="row g-3 align-items-center">
-                            <div class="col-md-5">
-                                <label for="search" class="form-label">Cerca per nome</label>
-                                <input type="text" name="search" id="search" class="form-control" value="{{ current_search }}" placeholder="Nome del prodotto...">
+                            <div class="col-md-4">
+                                <label for="search" class="form-label">Search products</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                    <input type="text" name="search" id="search" class="form-control"
+                                           value="{{ current_search }}" placeholder="Search by name...">
+                                </div>
                             </div>
-                            <div class="col-md-5">
-                                <label for="category" class="form-label">Filtra per categoria</label>
+                            <div class="col-md-3">
+                                <label for="category" class="form-label">Filter by category</label>
                                 <select name="category" id="category" class="form-select">
-                                    <option value="">Tutte le categorie</option>
+                                    <option value="">All categories</option>
                                     {% for cat in all_categories %}
                                     <option value="{{ cat.id }}" {% if current_category_filter == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
                                     {% endfor %}
                                 </select>
                             </div>
+                            <div class="col-md-3">
+                                <label for="brand" class="form-label">Filtra per brand</label>
+                                <select name="brand" id="brand" class="form-select">
+                                    <option value="">Tutti i brand</option>
+                                    {% for brand in all_brands %}
+                                    <option value="{{ brand.id }}" {% if current_brand_filter|stringformat:"s" == brand.id|stringformat:"s" %}selected{% endif %}>{{ brand.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
                             <div class="col-md-2 d-flex align-items-end">
-                                <button type="submit" class="btn btn-info w-100"><i class="fas fa-search me-2"></i>Filtra</button>
+                                <button type="submit" class="btn btn-info w-100"><i class="fas fa-search me-2"></i>Search</button>
                             </div>
                         </div>
                         <input type="hidden" name="sort_by" id="sort_by" value="{{ current_sort_by }}">
@@ -99,10 +117,11 @@
                                 <th class="sortable-header" data-sort="id">ID<span class="sort-arrows"><i class="fas fa-chevron-up sort-arrow" data-direction="asc"></i><i class="fas fa-chevron-down sort-arrow" data-direction="desc"></i></span></th>
                                 <th class="sortable-header" data-sort="name">Name<span class="sort-arrows"><i class="fas fa-chevron-up sort-arrow" data-direction="asc"></i><i class="fas fa-chevron-down sort-arrow" data-direction="desc"></i></span></th>
                                 <th class="sortable-header" data-sort="category">Category<span class="sort-arrows"><i class="fas fa-chevron-up sort-arrow" data-direction="asc"></i><i class="fas fa-chevron-down sort-arrow" data-direction="desc"></i></span></th>
+                                <th class="sortable-header" data-sort="brand">Brand<span class="sort-arrows"><i class="fas fa-chevron-up sort-arrow" data-direction="asc"></i><i class="fas fa-chevron-down sort-arrow" data-direction="desc"></i></span></th>
                                 <th class="sortable-header" data-sort="price">Price<span class="sort-arrows"><i class="fas fa-chevron-up sort-arrow" data-direction="asc"></i><i class="fas fa-chevron-down sort-arrow" data-direction="desc"></i></span></th>
                                 <th class="sortable-header" data-sort="stock">Stock<span class="sort-arrows"><i class="fas fa-chevron-up sort-arrow" data-direction="asc"></i><i class="fas fa-chevron-down sort-arrow" data-direction="desc"></i></span></th>
                                 <th class="sortable-header" data-sort="image_count">N° Img<span class="sort-arrows"><i class="fas fa-chevron-up sort-arrow" data-direction="asc"></i><i class="fas fa-chevron-down sort-arrow" data-direction="desc"></i></span></th>
-                                <th>Azioni</th>
+                                <th>Actions</th>
                             </tr>
                             </thead>
                             <tbody>
@@ -120,6 +139,7 @@
                                 <td>{{ product.id }}</td>
                                 <td>{{ product.name }}</td>
                                 <td>{{ product.category.name }}</td>
+                                <td>{{ product.brand.name }}</td>
                                 <td>€ {{ product.price|stringformat:".2f" }}</td>
                                 <td>{{ product.stock }}</td>
                                 <td>{{ product.image_count }}</td>
@@ -127,13 +147,13 @@
                                     <a href="{% url 'product_detail' product.pk %}" class="btn btn-sm btn-info me-1" title="View product details">
                                         <i class="fas fa-external-link-alt"></i>
                                     </a>
-                                    <a href="{% url 'product_update' product.pk %}" class="btn btn-sm btn-warning me-1" title="Modifica"><i class="fas fa-edit"></i></a>
-                                    <a href="{% url 'product_delete' product.pk %}" class="btn btn-sm btn-danger" title="Elimina"><i class="fas fa-trash"></i></a>
+                                    <a href="{% url 'product_update' product.pk %}" class="btn btn-sm btn-warning me-1" title="Edit"><i class="fas fa-edit"></i></a>
+                                    <a href="{% url 'product_delete' product.pk %}" class="btn btn-sm btn-danger" title="Delete"><i class="fas fa-trash"></i></a>
                                 </td>
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="8" class="text-center">Nessun prodotto trovato.</td>
+                                <td colspan="8" class="text-center">No products found.</td>
                             </tr>
                             {% endfor %}
                             </tbody>
@@ -147,19 +167,23 @@
             <div class="card mt-3">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="card-title mb-0">Elenco Categorie</h5>
-                        <a href="{% url 'category_create' %}" class="btn btn-primary"><i class="fas fa-plus me-2"></i>Aggiungi Categoria</a>
+                        <h5 class="card-title mb-0">Categories List</h5>
+                        <a href="{% url 'category_create' %}" class="btn btn-primary"><i class="fas fa-plus me-2"></i>Add Category</a>
                     </div>
 
                     <form method="get" class="mb-4 p-3 bg-light rounded border" id="categoryFilterForm">
                         <input type="hidden" name="tab" value="categories">
                         <div class="row g-3 align-items-center">
                             <div class="col-md-10">
-                                <label for="category_search" class="form-label">Cerca per nome</label>
-                                <input type="text" name="category_search" id="category_search" class="form-control" value="{{ current_category_search }}" placeholder="Nome della categoria...">
+                                <label for="category_search" class="form-label">Search categories</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                    <input type="text" name="category_search" id="category_search" class="form-control"
+                                           value="{{ current_category_search }}" placeholder="Search by name...">
+                                </div>
                             </div>
                             <div class="col-md-2 d-flex align-items-end">
-                                <button type="submit" class="btn btn-info w-100"><i class="fas fa-search me-2"></i>Cerca</button>
+                                <button type="submit" class="btn btn-info w-100"><i class="fas fa-search me-2"></i>Search</button>
                             </div>
                         </div>
                         <input type="hidden" name="category_sort_by" id="category_sort_by" value="{{ current_category_sort_by }}">
@@ -171,9 +195,9 @@
                             <thead>
                             <tr>
                                 <th class="sortable-header" data-sort="id" data-table="category">ID<span class="sort-arrows"><i class="fas fa-chevron-up sort-arrow" data-direction="asc"></i><i class="fas fa-chevron-down sort-arrow" data-direction="desc"></i></span></th>
-                                <th class="sortable-header" data-sort="name" data-table="category">Nome<span class="sort-arrows"><i class="fas fa-chevron-up sort-arrow" data-direction="asc"></i><i class="fas fa-chevron-down sort-arrow" data-direction="desc"></i></span></th>
+                                <th class="sortable-header" data-sort="name" data-table="category">Name<span class="sort-arrows"><i class="fas fa-chevron-up sort-arrow" data-direction="asc"></i><i class="fas fa-chevron-down sort-arrow" data-direction="desc"></i></span></th>
                                 <th class="sortable-header" data-sort="slug" data-table="category">Slug<span class="sort-arrows"><i class="fas fa-chevron-up sort-arrow" data-direction="asc"></i><i class="fas fa-chevron-down sort-arrow" data-direction="desc"></i></span></th>
-                                <th>Azioni</th>
+                                <th>Actions</th>
                             </tr>
                             </thead>
                             <tbody>
@@ -183,13 +207,13 @@
                                 <td>{{ category.name }}</td>
                                 <td>{{ category.slug }}</td>
                                 <td>
-                                    <a href="{% url 'category_update' category.pk %}" class="btn btn-sm btn-warning me-1" title="Modifica"><i class="fas fa-edit"></i></a>
-                                    <a href="{% url 'category_delete' category.pk %}" class="btn btn-sm btn-danger" title="Elimina"><i class="fas fa-trash"></i></a>
+                                    <a href="{% url 'category_update' category.pk %}" class="btn btn-sm btn-warning me-1" title="Edit"><i class="fas fa-edit"></i></a>
+                                    <a href="{% url 'category_delete' category.pk %}" class="btn btn-sm btn-danger" title="Delete"><i class="fas fa-trash"></i></a>
                                 </td>
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="4" class="text-center">Nessuna categoria trovata.</td>
+                                <td colspan="4" class="text-center">No categories found.</td>
                             </tr>
                             {% endfor %}
                             </tbody>
@@ -199,7 +223,66 @@
             </div>
         </div>
 
-        <!-- Inserisci questo codice nel tab-pane degli ordini -->
+        <div class="tab-pane fade {% if active_tab == 'brands' %}show active{% endif %}" id="brands" role="tabpanel" aria-labelledby="categories-tab">
+            <div class="card mt-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0">Brands List</h5>
+                        <a href="{% url 'brand_create' %}" class="btn btn-primary"><i class="fas fa-plus me-2"></i>Add Brand</a>
+                    </div>
+
+                    <form method="get" class="mb-4 p-3 bg-light rounded border" id="brandFilterForm">
+                        <input type="hidden" name="tab" value="brands">
+                        <div class="row g-3 align-items-center">
+                            <div class="col-md-10">
+                                <label for="brand_search" class="form-label">Search brands</label>
+                                <input type="text" name="brand_search" id="brand_search"
+                                       class="form-control" value="{{ current_brand_search }}"
+                                       placeholder="Search by name...">
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button type="submit" class="btn btn-info w-100">
+                                    <i class="fas fa-search me-2"></i>Search
+                                </button>
+                            </div>
+                        </div>
+                        <input type="hidden" name="brand_sort_by" id="brand_sort_by" value="{{ current_brand_sort_by }}">
+                        <input type="hidden" name="brand_sort_order" id="brand_sort_order" value="{{ current_brand_sort_order }}">
+                    </form>
+
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                            <tr>
+                                <th class="sortable-header" data-sort="id" data-table="category">ID<span class="sort-arrows"><i class="fas fa-chevron-up sort-arrow" data-direction="asc"></i><i class="fas fa-chevron-down sort-arrow" data-direction="desc"></i></span></th>
+                                <th class="sortable-header" data-sort="name" data-table="category">Name<span class="sort-arrows"><i class="fas fa-chevron-up sort-arrow" data-direction="asc"></i><i class="fas fa-chevron-down sort-arrow" data-direction="desc"></i></span></th>
+                                <th class="sortable-header" data-sort="slug" data-table="category">Slug<span class="sort-arrows"><i class="fas fa-chevron-up sort-arrow" data-direction="asc"></i><i class="fas fa-chevron-down sort-arrow" data-direction="desc"></i></span></th>
+                                <th>Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for brand in brands %}
+                            <tr>
+                                <td>{{ brand.id }}</td>
+                                <td>{{ brand.name }}</td>
+                                <td>{{ brand.slug }}</td>
+                                <td>
+                                    <a href="{% url 'brand_update' brand.pk %}" class="btn btn-sm btn-warning me-1" title="Edit"><i class="fas fa-edit"></i></a>
+                                    <a href="{% url 'brand_delete' brand.pk %}" class="btn btn-sm btn-danger" title="Delete"><i class="fas fa-trash"></i></a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center">No brands found.</td>
+                            </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="tab-pane fade {% if active_tab == 'orders' %}show active{% endif %}" id="orders" role="tabpanel" aria-labelledby="orders-tab">
             <div class="card mt-3">
                 <div class="card-body">
@@ -288,23 +371,23 @@
                                 <th class="sortable-header" data-sort="id" data-table="order">
                                     Order ID
                                     <span class="sort-arrows">
-                                    <i class="fas fa-chevron-up sort-arrow" data-direction="asc"></i>
-                                    <i class="fas fa-chevron-down sort-arrow" data-direction="desc"></i>
-                                </span>
+                                        <i class="fas fa-chevron-up sort-arrow" data-direction="asc"></i>
+                                        <i class="fas fa-chevron-down sort-arrow" data-direction="desc"></i>
+                                    </span>
                                 </th>
                                 <th class="sortable-header" data-sort="user" data-table="order">
                                     Customer
                                     <span class="sort-arrows">
-                                    <i class="fas fa-chevron-up sort-arrow" data-direction="asc"></i>
-                                    <i class="fas fa-chevron-down sort-arrow" data-direction="desc"></i>
-                                </span>
+                                        <i class="fas fa-chevron-up sort-arrow" data-direction="asc"></i>
+                                        <i class="fas fa-chevron-down sort-arrow" data-direction="desc"></i>
+                                    </span>
                                 </th>
                                 <th class="sortable-header" data-sort="created_at" data-table="order">
                                     Date
                                     <span class="sort-arrows">
-                                    <i class="fas fa-chevron-up sort-arrow" data-direction="asc"></i>
-                                    <i class="fas fa-chevron-down sort-arrow" data-direction="desc"></i>
-                                </span>
+                                        <i class="fas fa-chevron-up sort-arrow" data-direction="asc"></i>
+                                        <i class="fas fa-chevron-down sort-arrow" data-direction="desc"></i>
+                                    </span>
                                 </th>
                                 <th class="sortable-header" data-sort="total_amount" data-table="order">
                                     Total
@@ -466,91 +549,92 @@
                 </div>
             </div>
         </div>
+    </div>
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize sort arrows based on current sort
+        initializeSortArrows();
 
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                // Initialize sort arrows based on current sort
-                initializeSortArrows();
-
-                // Add click handlers to sortable headers
-                document.querySelectorAll('.sortable-header').forEach(header => {
-                    header.addEventListener('click', function() {
-                        const sortBy = this.getAttribute('data-sort');
-                        const isCategory = this.getAttribute('data-table') === 'category';
-                        handleSort(sortBy, isCategory);
-                    });
-                });
-
-                function initializeSortArrows() {
-                    // Products table
-                    const currentSortBy = document.getElementById('sort_by').value;
-                    const currentSortOrder = document.getElementById('sort_order').value;
-
-                    if (currentSortBy) {
-                        updateSortArrows(currentSortBy, currentSortOrder, false);
-                    }
-
-                    // Categories table
-                    const currentCategorySortBy = document.getElementById('category_sort_by').value;
-                    const currentCategorySortOrder = document.getElementById('category_sort_order').value;
-
-                    if (currentCategorySortBy) {
-                        updateSortArrows(currentCategorySortBy, currentCategorySortOrder, true);
-                    }
-                }
-
-                function updateSortArrows(sortBy, sortOrder, isCategory) {
-                    // Clear all active arrows
-                    const tableSelector = isCategory ? '[data-table="category"]' : ':not([data-table="category"])';
-                    document.querySelectorAll(`.sortable-header${tableSelector} .sort-arrow`).forEach(arrow => {
-                        arrow.classList.remove('active');
-                    });
-
-                    // Activate the correct arrow
-                    const activeHeader = document.querySelector(`.sortable-header[data-sort="${sortBy}"]${tableSelector}`);
-                    if (activeHeader) {
-                        const activeArrow = activeHeader.querySelector(`.sort-arrow[data-direction="${sortOrder}"]`);
-                        if (activeArrow) {
-                            activeArrow.classList.add('active');
-                        }
-                    }
-                }
-
-                function handleSort(sortBy, isCategory = false) {
-                    if (isCategory) {
-                        const currentSortBy = document.getElementById('category_sort_by').value;
-                        const currentSortOrder = document.getElementById('category_sort_order').value;
-
-                        let newSortOrder = 'asc';
-                        if (currentSortBy === sortBy && currentSortOrder === 'asc') {
-                            newSortOrder = 'desc';
-                        }
-
-                        document.getElementById('category_sort_by').value = sortBy;
-                        document.getElementById('category_sort_order').value = newSortOrder;
-
-                        // Activate categories tab and submit form
-                        //document.getElementById('categories-tab').click();
-                        //setTimeout(() => {
-                        //document.getElementById('categoryFilterForm').submit();
-                        //}, 100);
-
-                        document.getElementById('categoryFilterForm').submit();
-                    } else {
-                        const currentSortBy = document.getElementById('sort_by').value;
-                        const currentSortOrder = document.getElementById('sort_order').value;
-
-                        let newSortOrder = 'asc';
-                        if (currentSortBy === sortBy && currentSortOrder === 'asc') {
-                            newSortOrder = 'desc';
-                        }
-
-                        document.getElementById('sort_by').value = sortBy;
-                        document.getElementById('sort_order').value = newSortOrder;
-
-                        document.getElementById('filterForm').submit();
-                    }
-                }
+        // Add click handlers to sortable headers
+        document.querySelectorAll('.sortable-header').forEach(header => {
+            header.addEventListener('click', function() {
+                const sortBy = this.getAttribute('data-sort');
+                const isCategory = this.getAttribute('data-table') === 'category';
+                handleSort(sortBy, isCategory);
             });
-        </script>
-        {% endblock %}
+        });
+
+        function initializeSortArrows() {
+            // Products table
+            const currentSortBy = document.getElementById('sort_by').value;
+            const currentSortOrder = document.getElementById('sort_order').value;
+
+            if (currentSortBy) {
+                updateSortArrows(currentSortBy, currentSortOrder, false);
+            }
+
+            // Categories table
+            const currentCategorySortBy = document.getElementById('category_sort_by').value;
+            const currentCategorySortOrder = document.getElementById('category_sort_order').value;
+
+            if (currentCategorySortBy) {
+                updateSortArrows(currentCategorySortBy, currentCategorySortOrder, true);
+            }
+        }
+
+        function updateSortArrows(sortBy, sortOrder, isCategory) {
+            // Clear all active arrows
+            const tableSelector = isCategory ? '[data-table="category"]' : ':not([data-table="category"])';
+            document.querySelectorAll(`.sortable-header${tableSelector} .sort-arrow`).forEach(arrow => {
+                arrow.classList.remove('active');
+            });
+
+            // Activate the correct arrow
+            const activeHeader = document.querySelector(`.sortable-header[data-sort="${sortBy}"]${tableSelector}`);
+            if (activeHeader) {
+                const activeArrow = activeHeader.querySelector(`.sort-arrow[data-direction="${sortOrder}"]`);
+                if (activeArrow) {
+                    activeArrow.classList.add('active');
+                }
+            }
+        }
+
+        function handleSort(sortBy, isCategory = false) {
+            if (isCategory) {
+                const currentSortBy = document.getElementById('category_sort_by').value;
+                const currentSortOrder = document.getElementById('category_sort_order').value;
+
+                let newSortOrder = 'asc';
+                if (currentSortBy === sortBy && currentSortOrder === 'asc') {
+                    newSortOrder = 'desc';
+                }
+
+                document.getElementById('category_sort_by').value = sortBy;
+                document.getElementById('category_sort_order').value = newSortOrder;
+
+                // Activate categories tab and submit form
+                //document.getElementById('categories-tab').click();
+                //setTimeout(() => {
+                //document.getElementById('categoryFilterForm').submit();
+                //}, 100);
+
+                document.getElementById('categoryFilterForm').submit();
+            } else {
+                const currentSortBy = document.getElementById('sort_by').value;
+                const currentSortOrder = document.getElementById('sort_order').value;
+
+                let newSortOrder = 'asc';
+                if (currentSortBy === sortBy && currentSortOrder === 'asc') {
+                    newSortOrder = 'desc';
+                }
+
+                document.getElementById('sort_by').value = sortBy;
+                document.getElementById('sort_order').value = newSortOrder;
+
+                document.getElementById('filterForm').submit();
+            }
+        }
+    });
+</script>
+{% endblock %}
