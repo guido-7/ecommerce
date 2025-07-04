@@ -156,30 +156,30 @@
 
 {% block content %}
 <div class="cart-container">
-    <h2 class="mb-4">Carrello</h2>
+    <h2 class="mb-4">Shopping Cart</h2>
 
     {% if not cart_items %}
         <div class="empty-cart-message">
-            <h4 class="mb-3">Il tuo carrello è vuoto</h4>
-            <p class="text-muted mb-4">Sembra che non ci siano articoli nel tuo carrello</p>
-            <a href="{% url 'product_list' %}" class="btn btn-primary">Continua gli acquisti</a>
+            <h4 class="mb-3">Your cart is empty</h4>
+            <p class="text-muted mb-4">It seems there are no items in your cart</p>
+            <a href="{% url 'product_list' %}" class="btn btn-primary">Continue Shopping</a>
         </div>
     {% else %}
         <div class="row">
-            <!-- Colonna prodotti -->
+            <!-- Products column -->
             <div class="col-lg-8">
 
                 {% for item in cart_items %}
-                <!-- Prodotto nel carrello -->
+                <!-- Cart product -->
                 <div class="card product-card mb-3">
                     <div class="card-body">
                         <div class="row">
-                            <!-- Immagine prodotto -->
+                            <!-- Product image -->
                             <div class="col-md-2 mb-3 mb-md-0">
                                 <img src="{{ item.product.images.first.image.url }}" alt="{{ item.product.name }}" class="img-fluid product-image">
                             </div>
 
-                            <!-- Dettagli prodotto -->
+                            <!-- Product details -->
                             <div class="col-md-6">
                                 <div class="product-name">{{ item.product.name }}</div>
                                 {% if item.product.brand %}
@@ -187,13 +187,13 @@
                                 {% endif %}
 
                                 {% if item.product.is_available %}
-                                <div class="availability">Disponibile</div>
+                                <div class="availability">Available</div>
                                 {% else %}
-                                <div class="availability text-danger">Non disponibile</div>
+                                <div class="availability text-danger">Not Available</div>
                                 {% endif %}
                             </div>
 
-                            <!-- Prezzo e quantità -->
+                            <!-- Price and quantity -->
                             <div class="col-md-4">
                                 <div>
                                     {% if item.product.discounted_price %}
@@ -219,7 +219,9 @@
                                 </div>
 
                                 <div class="action-links mt-3">
-                                    <a href="{% url 'remove_from_cart' item.product.id %}" class="remove">Rimuovi</a>
+                                    <a href="{% url 'remove_from_cart' item.product.id %}" class="remove">
+                                        <i class="fa-solid fa-trash-can"></i> Remove
+                                    </a>
                                 </div>
                             </div>
                         </div>
@@ -229,45 +231,45 @@
 
             </div>
 
-            <!-- Colonna riepilogo -->
+            <!-- Summary column -->
             <div class="col-lg-4">
                 <div class="card summary-card">
                     <div class="card-body">
-                        <h4 class="summary-title">Riepilogo ({{ cart_items|length }})</h4>
+                        <h4 class="summary-title">Summary ({{ cart_items|length }})</h4>
 
                         <div class="mb-4">
-                            <label class="form-label"><strong>Inserisci il codice promozionale</strong></label>
+                            <label class="form-label"><strong>Enter promo code</strong></label>
                             <div class="input-group promo-input-group">
-                                <input type="text" class="form-control" placeholder="Codice promozionale">
-                                <button class="btn" type="button">INVIA</button>
+                                <input type="text" class="form-control" placeholder="Promo code">
+                                <button class="btn" type="button">APPLY</button>
                             </div>
                         </div>
 
                         <div class="summary-row">
-                            <span>Subtotale</span>
+                            <span>Subtotal</span>
                             <span>{{ total_price }} €</span>
                         </div>
 
                         <div class="summary-row">
-                            <span>Spedizione stimata</span>
+                            <span>Estimated Shipping</span>
                             <span>Free - Standard</span>
                         </div>
 
                         <div class="summary-row">
-                            <span>Risparmio totale</span>
+                            <span>Total Savings</span>
                             <span class="savings">-{{ total_savings|floatformat:2 }} €</span>
                         </div>
 
                         <div class="summary-row summary-total">
-                            <span>Totale</span>
+                            <span>Total</span>
                             <span>{{ total_price }} €</span>
                         </div>
 
                         <div class="installment-info">
-                            Paga in 3 rate da {{ installment_amount|floatformat:2 }} € senza interessi. <a href="#" class="link-primary">Klarna</a>
+                            Pay in 3 installments of {{ installment_amount|floatformat:2 }} € interest-free. <a href="#" class="link-primary">Klarna</a>
                         </div>
 
-                        <a href="{% url 'checkout' %}" class="btn checkout-btn w-100">PROCEDI AL PAGAMENTO</a>
+                        <a href="{% url 'checkout' %}" class="btn checkout-btn w-100">PROCEED TO CHECKOUT</a>
                     </div>
                 </div>
             </div>
