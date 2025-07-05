@@ -1,71 +1,377 @@
 <!doctype html>
-<html lang="en">
+<html lang="it">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>E-Commerce</title>
+    <title>HiveTech - Your online store</title>
     <link rel="icon" href="/media/bee.png" type="image/png">
     <!-- Bootstrap CSS via CDN -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
     {% block extra_css %}{% endblock %}
+    <style>
+      body {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        background-color: #f8f9fa;
+      }
+
+      .navbar {
+        background: linear-gradient(135deg, #4e73df 0%, #1c3faa 100%) !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        padding: 0.5rem 0;
+      }
+
+      .navbar-brand {
+        font-weight: bold;
+        font-size: 1.5rem;
+        color: white !important;
+      }
+
+      .navbar-nav .nav-link {
+        color: rgba(255,255,255,0.9) !important;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        padding: 0.5rem 1rem !important;
+        border-radius: 0.5rem;
+        margin: 0 0.2rem;
+      }
+
+      .navbar-nav .nav-link:hover {
+        color: white !important;
+        background-color: rgba(255,255,255,0.1);
+        transform: translateY(-1px);
+      }
+
+      .cart-icon, .profile-icon {
+        position: relative;
+        display: inline-block;
+        color: rgba(255,255,255,0.9) !important;
+        font-size: 1.2rem;
+        padding: 0.5rem 1rem !important;
+        border-radius: 0.5rem;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        cursor: pointer;
+      }
+
+      .cart-icon:hover, .profile-icon:hover {
+        color: white !important;
+        background-color: rgba(255,255,255,0.1);
+        transform: translateY(-1px);
+      }
+
+      .cart-badge {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        background: #ff4757;
+        color: white;
+        border-radius: 50%;
+        padding: 0.2rem 0.4rem;
+        font-size: 0.7rem;
+        font-weight: bold;
+        min-width: 18px;
+        text-align: center;
+        line-height: 1;
+      }
+
+      .profile-dropdown {
+        position: relative;
+        display: inline-block;
+      }
+
+      .dropdown-menu {
+        min-width: 280px;
+        border: none;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        border-radius: 0.75rem;
+        padding: 1rem;
+        margin-top: 0.5rem;
+      }
+
+      .dropdown-menu.show {
+        display: block;
+      }
+
+      .dropdown-item {
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        transition: all 0.2s ease;
+        border: none;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+      }
+
+      .dropdown-item:hover {
+        background-color: #f8f9fa;
+        transform: translateX(5px);
+      }
+
+      .dropdown-item.btn-primary {
+        background: linear-gradient(135deg, #4e73df 0%, #1c3faa 100%);
+        color: white;
+        border: none;
+      }
+
+      .dropdown-item.btn-primary:hover {
+        background: linear-gradient(135deg, #3a5fd8 0%, #1530aa 100%);
+        transform: translateX(5px);
+      }
+
+      .dropdown-item.btn-outline-primary {
+        border: 2px solid #4e73df;
+        color: #4e73df;
+      }
+
+      .dropdown-item.btn-outline-primary:hover {
+        background-color: #4e73df;
+        color: white;
+      }
+
+      .dropdown-item.btn-danger {
+        background-color: #ff4757;
+        color: white;
+        border: none;
+      }
+
+      .dropdown-item.btn-danger:hover {
+        background-color: #ff3742;
+        transform: translateX(5px);
+      }
+
+      .admin-tools {
+        color: #ffd700 !important;
+        font-size: 1.1rem;
+        padding: 0.5rem 1rem !important;
+        border-radius: 0.5rem;
+        transition: all 0.3s ease;
+      }
+
+      .admin-tools:hover {
+        color: white !important;
+        background-color: rgba(255,215,0,0.1);
+        transform: translateY(-1px);
+      }
+
+      .welcome-message {
+        background: linear-gradient(135deg, #4e73df 0%, #1c3faa 100%);
+        color: white;
+        padding: 1rem;
+        border-radius: 0.75rem;
+        margin-bottom: 1rem;
+        text-align: center;
+        font-size: 0.9rem;
+      }
+
+      .main-content {
+        flex: 1;
+        padding: 2rem 0;
+      }
+
+      .container {
+        max-width: 1200px;
+      }
+
+      .alert {
+        border-radius: 0.75rem;
+        border: none;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      }
+
+      .footer {
+        background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+        color: white;
+        padding: 2rem 0 1rem;
+        margin-top: auto;
+      }
+
+      .footer-content {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 2rem;
+        margin-bottom: 1rem;
+      }
+
+      .footer-section h5 {
+        color: #ecf0f1;
+        margin-bottom: 1rem;
+        font-weight: 600;
+      }
+
+      .footer-section p, .footer-section a {
+        color: #bdc3c7;
+        text-decoration: none;
+        transition: color 0.3s ease;
+      }
+
+      .footer-section a:hover {
+        color: #ecf0f1;
+      }
+
+      .footer-bottom {
+        border-top: 1px solid #34495e;
+        padding-top: 1rem;
+        text-align: center;
+        color: #95a5a6;
+        font-size: 0.9rem;
+      }
+
+      @media (max-width: 768px) {
+        .navbar-nav {
+          text-align: center;
+        }
+
+        .dropdown-menu {
+          min-width: 260px;
+        }
+
+        .footer-content {
+          grid-template-columns: 1fr;
+          text-align: center;
+        }
+      }
+    </style>
   </head>
   <body>
     <!-- Navigation Bar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <nav class="navbar navbar-expand-lg navbar-dark">
       <div class="container-fluid">
-        <a class="navbar-brand" href="{% url 'product_list' %}">Django E-Commerce</a>
+        <a class="navbar-brand" href="{% url 'product_list' %}">
+          <svg xmlns="http://www.w3.org/2000/svg" height="42px" viewBox="0 -960 960 960" width="48px" fill="#FFFFFF"><path d="m394-80-70-123H189l-87-154 69-123-69-123 87-154h135l70-123h172l70 123h135l87 154-69 123 69 123-87 154H636L566-80H394Zm243-429h100l54-94-54-94H637l-54 94 54 94ZM430-388h100l54-92-54-92H430l-54 92 54 92Zm0-244h100l54-94-54-94H430l-54 94 54 94ZM224-509h100l54-94-54-94H224l-54 94 54 94Zm0 246h100l54-94-55-94H223l-54 94 55 94Zm206 123h100l54-94-54-94H430l-54 94 54 94Zm207-123h100l54-94-54-94H637l-51 94 51 94Z"/></svg>
+          HiveTech
+        </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
           <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
-          <ul class="navbar-nav ms-auto">
+          <ul class="navbar-nav ms-auto align-items-center">
+
+            <!-- Cart Icon -->
             <li class="nav-item">
-              <!-- The cart context processor will provide the 'cart_item_count' -->
-              <a class="nav-link" href="{% url 'view_cart' %}">Cart ({{ cart_item_count }})</a>
+              <a class="cart-icon" href="{% url 'view_cart' %}">
+                <i class="fas fa-shopping-cart"></i>
+                {% if cart_item_count > 0 %}
+                  <span class="cart-badge">{{ cart_item_count }}</span>
+                {% endif %}
+              </a>
             </li>
-            {% if user.is_authenticated %}
+
+            <!-- Profile Dropdown -->
+            <li class="nav-item profile-dropdown">
+              <a class="profile-icon" href="#" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="fas fa-user-circle"></i>
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end">
+                {% if user.is_authenticated %}
+                  <li class="dropdown-item-text">
+                    <strong>Hello, {{ user.first_name|default:user.username }}!</strong>
+                  </li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li>
+                    <a class="dropdown-item" href="{% url 'order_history' %}">
+                      <i class="fas fa-history me-2"></i>My Orders
+                    </a>
+                  </li>
+                  <li>
+                    <a class="dropdown-item" href="#">
+                      <i class="fas fa-user-edit me-2"></i>Edit Profile
+                    </a>
+                  </li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li>
+                    <form action="{% url 'logout' %}" method="post" style="display:inline; width: 100%;">
+                      {% csrf_token %}
+                      <button type="submit" class="dropdown-item btn-danger">
+                        <i class="fas fa-sign-out-alt me-2"></i>Logout
+                      </button>
+                    </form>
+                  </li>
+                {% else %}
+                  <li class="welcome-message">
+                    <i class="fas fa-star mb-2"></i>
+                    <div>Sign in to receive exclusive benefits, save your cart, and track your orders!</div>
+                  </li>
+                  <li>
+                    <a class="dropdown-item btn-primary" href="{% url 'login' %}">
+                      <i class="fas fa-sign-in-alt me-2"></i>Sign In
+                    </a>
+                  </li>
+                  <li>
+                    <a class="dropdown-item btn-outline-primary" href="{% url 'register' %}">
+                      <i class="fas fa-user-plus me-2"></i>Register
+                    </a>
+                  </li>
+                {% endif %}
+              </ul>
+            </li>
+
+            <!-- Admin Tools (visible only to staff) -->
+            {% if user.is_staff %}
               <li class="nav-item">
-                <a class="nav-link" href="{% url 'order_history' %}">My Orders</a>
-              </li>
-               <li class="nav-item">
-                <form action="{% url 'logout' %}" method="post" style="display:inline;">
-                  {% csrf_token %}
-                  <button type="submit" class="nav-link btn btn-link">Logout</button>
-                </form>
-              </li>
-            {% else %}
-              <li class="nav-item">
-                <a class="nav-link" href="{% url 'login' %}">Login</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="{% url 'register' %}">Register</a>
+                <a class="admin-tools" href="/manage/" title="Admin Panel">
+                  <i class="fas fa-cog"></i>
+                </a>
               </li>
             {% endif %}
+
           </ul>
         </div>
       </div>
     </nav>
 
     <!-- Main Content Block -->
-    <div class="container mt-4">
-      {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        {% endfor %}
-      {% endif %}
-      {% block content %}
-      {% endblock %}
+    <div class="main-content">
+      <div class="container">
+        {% if messages %}
+          {% for message in messages %}
+              <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                  <i class="fas fa-info-circle me-2"></i>{{ message }}
+                  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+              </div>
+          {% endfor %}
+        {% endif %}
+        {% block content %}
+        {% endblock %}
+      </div>
     </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container">
+        <div class="footer-content">
+          <div class="footer-section">
+            <h5>
+              <svg xmlns="http://www.w3.org/2000/svg" height="38px" viewBox="0 -960 960 960" width="48px" fill="#FFFFFF"><path d="m394-80-70-123H189l-87-154 69-123-69-123 87-154h135l70-123h172l70 123h135l87 154-69 123 69 123-87 154H636L566-80H394Zm243-429h100l54-94-54-94H637l-54 94 54 94ZM430-388h100l54-92-54-92H430l-54 92 54 92Zm0-244h100l54-94-54-94H430l-54 94 54 94ZM224-509h100l54-94-54-94H224l-54 94 54 94Zm0 246h100l54-94-55-94H223l-54 94 55 94Zm206 123h100l54-94-54-94H430l-54 94 54 94Zm207-123h100l54-94-54-94H637l-51 94 51 94Z"/></svg>
+              HiveTech
+            </h5>
+            <p>Your trusted online store. Quality products, fast shipping, and customer support always available.</p>
+          </div>
+          <div class="footer-section">
+            <h5>Useful Links</h5>
+            <p><a href="{% url 'product_list' %}">Product Catalog</a></p>
+            <p><a href="#">About Us</a></p>
+            <p><a href="#">Contact</a></p>
+            <p><a href="#">FAQ</a></p>
+          </div>
+          <div class="footer-section">
+            <h5>Support</h5>
+            <p><a href="#">Return Policy</a></p>
+            <p><a href="#">Shipping</a></p>
+            <p><a href="#">Privacy Policy</a></p>
+            <p><a href="#">Terms of Service</a></p>
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <p>&copy; 2025 HiveTech. All rights reserved.</p>
+        </div>
+      </div>
+    </footer>
 
     <!-- Bootstrap JS Bundle via CDN -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
     {% block extra_js %}{% endblock %}
   </body>
 </html>
