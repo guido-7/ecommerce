@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 
 class Category(models.Model):
     name = models.CharField(max_length=255, unique=True)
@@ -52,3 +53,20 @@ class ProductImage(models.Model):
 
     def __str__(self):
         return f"Image for {self.product.name}"
+
+
+class PromoCode(models.Model):
+    code = models.CharField(max_length=20, unique=True)
+    discount_percentage = models.DecimalField(max_digits=5, decimal_places=2)
+    valid_from = models.DateTimeField()
+    valid_to = models.DateTimeField()
+
+    def __str__(self):
+        return self.code
+
+    def is_valid(self):
+        if not self.valid_from or not self.valid_to:
+            return False
+
+        now = timezone.now()
+        return self.valid_from <= now <= self.valid_to

@@ -1,16 +1,22 @@
+from decimal import Decimal
+
+from django.contrib import messages
+from django.contrib.auth.mixins import UserPassesTestMixin
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.db.models import Q, Count, Prefetch
+from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy, reverse
-from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
-from django.contrib.auth.mixins import UserPassesTestMixin
-from django.contrib import messages
-from django.db.models import Q, Count, Prefetch
 from django.utils.text import slugify
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 
 from . import models
-from .models import Product, ProductImage, Category, Brand
+from .models import Product, ProductImage, Category, Brand, PromoCode
 from orders.models import Order, OrderItem
-from .forms import CategoryForm
+from .forms import CategoryForm, PromoCodeForm
+
 
 class ProductListView(ListView):
     model = Product
@@ -49,6 +55,67 @@ class ProductDetailView(DetailView):
 
 # === CART MANAGEMENT ===
 
+def view_cart(request):
+    cart = request.session.get('cart', {})
+    cart_items = []
+    total_price = 0
+    subtotal = 0
+    total_savings = 0
+
+    for product_id, item_data in cart.items():
+        product = Product.objects.get(id=product_id)
+        actual_price = product.get_actual_price()
+        total_item_price = actual_price * item_data['quantity']
+        if product.discounted_price:
+            total_savings += (product.price - product.discounted_price) * item_data['quantity']
+
+        cart_items.append({
+            'product': product,
+            'quantity': item_data['quantity'],
+            'total_price': total_item_price
+        })
+        subtotal += total_item_price
+
+    # Gestisci il promo code dalla sessione
+    promo_code = None
+    promo_discount_amount = Decimal('0.00')
+    applied_promo = request.session.get('applied_promo_code')
+
+    if applied_promo:
+        try:
+            promo_code = PromoCode.objects.get(code=applied_promo)
+            if promo_code.is_valid():
+                promo_discount_amount = subtotal * (promo_code.discount_percentage / 100)
+            else:
+                # Rimuovi il promo code scaduto dalla sessione
+                del request.session['applied_promo_code']
+                messages.warning(request, 'Il codice promo è scaduto ed è stato rimosso.')
+        except PromoCode.DoesNotExist:
+            del request.session['applied_promo_code']
+            messages.error(request, 'Codice promo non valido.')
+
+    total_price = subtotal - promo_discount_amount
+    total_savings += promo_discount_amount
+
+    installment_amount = total_price / 3 if total_price > 0 else 0
+
+    # Form per il promo code
+    promo_form = PromoCodeForm()
+
+    context = {
+        'cart_items': cart_items,
+        'subtotal': subtotal,
+        'discount_amount': promo_discount_amount,
+        'total_price': total_price,
+        'total_savings': total_savings,
+        'installment_amount': installment_amount,
+        'promo_form': promo_form,
+        'applied_promo': applied_promo,
+        'promo_code': promo_code,
+    }
+
+    return render(request, 'store/cart.html', context)
+
 def add_to_cart(request, product_id):
     if request.method == 'POST':
         quantity = int(request.POST.get('quantity', 1))
@@ -72,35 +139,6 @@ def add_to_cart(request, product_id):
         return redirect('product_detail', pk=product_id)
     return redirect('product_list')
 
-def view_cart(request):
-    cart = request.session.get('cart', {})
-    cart_items = []
-    total_price = 0
-    total_savings = 0
-
-    for product_id, item_data in cart.items():
-        product = Product.objects.get(id=product_id)
-        actual_price = product.get_actual_price()
-        total_item_price = actual_price * item_data['quantity']
-        if product.discounted_price:
-            total_savings += (product.price - product.discounted_price) * item_data['quantity']
-
-        cart_items.append({
-            'product': product,
-            'quantity': item_data['quantity'],
-            'total_price': total_item_price
-        })
-        total_price += total_item_price
-
-    installment_amount = total_price / 3 if total_price > 0 else 0
-
-    return render(request, 'store/cart.html', {
-        'cart_items': cart_items,
-        'total_price': total_price,
-        'total_savings': total_savings,
-        'installment_amount': installment_amount
-    })
-
 def remove_from_cart(request, product_id):
     cart = request.session.get('cart', {})
     if str(product_id) in cart:
@@ -109,6 +147,67 @@ def remove_from_cart(request, product_id):
         messages.success(request, "Item removed from cart.")
     return redirect('view_cart')
 
+
+@require_POST
+def apply_promo_code(request):
+    form = PromoCodeForm(request.POST)
+
+    if form.is_valid():
+        code = form.cleaned_data['code'].upper()
+
+        try:
+            promo_code = PromoCode.objects.get(code=code)
+            if promo_code.is_valid():
+                # Salva il codice promo nella sessione
+                request.session['applied_promo_code'] = code
+                messages.success(request,
+                                 f'Codice promo "{code}" applicato con successo! Sconto del {promo_code.discount_percentage}%')
+
+                # Se è una richiesta AJAX, ritorna JSON
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({
+                        'success': True,
+                        'message': f'Codice promo applicato! Sconto del {promo_code.discount_percentage}%',
+                        'discount_percentage': float(promo_code.discount_percentage)
+                    })
+            else:
+                messages.error(request, 'Il codice promo è scaduto o non ancora valido.')
+
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'Il codice promo è scaduto o non ancora valido.'
+                    })
+
+        except PromoCode.DoesNotExist:
+            messages.error(request, 'Codice promo non valido.')
+
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Codice promo non valido.'
+                })
+    else:
+        messages.error(request, 'Inserisci un codice promo valido.')
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': False,
+                'message': 'Inserisci un codice promo valido.'
+            })
+
+    return redirect('cart')
+
+
+def remove_promo_code(request):
+    if 'applied_promo_code' in request.session:
+        del request.session['applied_promo_code']
+        messages.success(request, 'Codice promo rimosso.')
+
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({'success': True, 'message': 'Codice promo rimosso.'})
+
+    return redirect('cart')
 
 def update_cart_quantity(request, product_id):
     product = get_object_or_404(Product, id=product_id)
@@ -134,7 +233,7 @@ def update_cart_quantity(request, product_id):
                     return redirect('remove_from_cart', product_id=product_id)
 
             request.session['cart'] = cart
-            messages.success(request, "Carrello aggiornato")
+            #messages.success(request, "Carrello aggiornato")
         else:
             messages.error(request, "Prodotto non trovato nel carrello")
 

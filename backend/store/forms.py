@@ -30,3 +30,16 @@ class CategoryForm(forms.ModelForm):
         elif Category.objects.filter(name__iexact=name).exists():
             raise forms.ValidationError("Una categoria con questo nome esiste già.")
         return name
+
+
+class PromoCodeForm(forms.Form):
+    code = forms.CharField(
+        label="Promo Code",
+        max_length=20,
+        widget=forms.TextInput(
+            attrs={
+                'placeholder': 'Inserisci il codice promo',
+                'class': 'form-control'
+            }
+        )
+    )

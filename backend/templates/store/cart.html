@@ -208,29 +208,50 @@
 
             </div>
 
-            <!-- Summary column -->
             <div class="col-lg-4">
                 <div class="card summary-card">
                     <div class="card-body">
                         <h4 class="summary-title">Summary ({{ cart_items|length }})</h4>
 
+                        <!-- Promo Code Section -->
                         <div class="mb-4">
                             <label class="form-label"><strong>Enter promo code</strong></label>
-                            <div class="input-group promo-input-group">
-                                <input type="text" class="form-control" placeholder="Promo code">
-                                <button class="btn" type="button">APPLY</button>
+
+                            {% if applied_promo %}
+                            <!-- Mostra il promo code applicato -->
+                            <div class="alert alert-success d-flex justify-content-between align-items-center">
+                                <span><strong>{{ applied_promo }}</strong> - {{ promo_code.discount_percentage }}% di sconto</span>
+                                <button type="button" class="btn-close" onclick="removePromoCode()" aria-label="Rimuovi"></button>
                             </div>
+                            {% else %}
+                            <!-- Form per inserire il promo code -->
+                            <form method="post" action="{% url 'apply_promo_code' %}" id="promo-form">
+                                {% csrf_token %}
+                                <div class="input-group promo-input-group">
+                                    <input type="text" name="code" class="form-control" placeholder="Inserisci il codice promo" maxlength="20" required>
+                                    <button class="btn" type="submit">APPLY</button>
+                                </div>
+                            </form>
+                            {% endif %}
                         </div>
 
+                        <!-- Summary Calculations -->
                         <div class="summary-row">
                             <span>Subtotal</span>
-                            <span>{{ total_price }} €</span>
+                            <span>{{ subtotal|floatformat:2 }} €</span>
                         </div>
 
                         <div class="summary-row">
                             <span>Estimated Shipping</span>
                             <span>Free - Standard</span>
                         </div>
+
+                        {% if discount_amount > 0 %}
+                        <div class="summary-row">
+                            <span>Sconto Promo ({{ promo_code.discount_percentage }}%)</span>
+                            <span class="savings">-{{ discount_amount|floatformat:2 }} €</span>
+                        </div>
+                        {% endif %}
 
                         <div class="summary-row">
                             <span>Total Savings</span>
@@ -239,7 +260,7 @@
 
                         <div class="summary-row summary-total">
                             <span>Total</span>
-                            <span>{{ total_price }} €</span>
+                            <span>{{ total_price|floatformat:2 }} €</span>
                         </div>
 
                         <div class="installment-info">
@@ -250,7 +271,89 @@
                     </div>
                 </div>
             </div>
+
         </div>
     {% endif %}
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const promoForm = document.getElementById('promo-form');
+
+    if (promoForm) {
+        promoForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            const button = this.querySelector('button[type="submit"]');
+            const originalText = button.textContent;
+
+            button.disabled = true;
+            button.textContent = 'APPLYING...';
+
+            fetch(this.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Ricarica la pagina per mostrare il promo code applicato
+                    location.reload();
+                } else {
+                    // Mostra il messaggio di errore
+                    showMessage(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showMessage('Si è verificato un errore. Riprova.', 'error');
+            })
+            .finally(() => {
+                button.disabled = false;
+                button.textContent = originalText;
+            });
+        });
+    }
+});
+
+function removePromoCode() {
+    fetch('{% url "remove_promo_code" %}', {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        }
+    });
+}
+
+function showMessage(message, type) {
+    // Crea un alert temporaneo per mostrare messaggi
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type === 'error' ? 'danger' : 'success'} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+
+    const container = document.querySelector('.summary-card .card-body');
+    container.insertBefore(alertDiv, container.firstChild);
+
+    // Rimuovi l'alert dopo 5 secondi
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+</script>
 {% endblock %}
