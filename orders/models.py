@@ -13,10 +13,16 @@ class Order(models.Model):
         CANCELLED = 'Cancelled', 'Cancelled'
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+
+    street_address = models.CharField("Street address", max_length=255)
+    city = models.CharField("City", max_length=100)
+    postal_code = models.CharField("ZIP code", max_length=20)
+    country = models.CharField("Country", max_length=100)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     promo_code_used = models.CharField(max_length=20, blank=True, null=True)
     discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
 
@@ -45,7 +51,6 @@ class Order(models.Model):
 
         # Aggiungi lo sconto del promo code
         return product_savings + self.discount_amount
-
 
     class Meta:
         ordering = ['-created_at']

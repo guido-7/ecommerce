@@ -135,8 +135,114 @@ def update_order_status(request, pk):
     return redirect('order_management')
 
 
+def get_suggested_address(user):
+    """
+    Logica per ottenere l'indirizzo suggerito:
+    1. Prima controlla se l'utente ha un indirizzo nel profilo
+    2. Poi controlla l'ultimo ordine dell'utente
+    3. Altrimenti restituisce None
+
+    Returns:
+        tuple: (address_dict, source_string) o (None, None)
+    """
+    # Controllo 1: Indirizzo dal profilo utente
+    if (hasattr(user, 'street_address') and
+            user.street_address and
+            user.city and
+            user.postal_code and
+            user.country):
+        return {
+            'street_address': user.street_address,
+            'city': user.city,
+            'postal_code': user.postal_code,
+            'country': user.country
+        }, 'user_profile'
+
+    # Controllo 2: Ultimo ordine dell'utente
+    try:
+        last_order = Order.objects.filter(user=user).order_by('-id').first()
+        if last_order:
+            return {
+                'street_address': last_order.street_address,
+                'city': last_order.city,
+                'postal_code': last_order.postal_code,
+                'country': last_order.country
+            }, 'last_order'
+    except Order.DoesNotExist:
+        pass
+
+    # Controllo 3: Nessun indirizzo trovato
+    return None, None
+
+
 @login_required
-def checkout(request):
+def checkout_address(request):
+    """
+    Step 1: Pagina per inserire l'indirizzo di spedizione
+    """
+    # Verifica che il carrello non sia vuoto
+    cart = request.session.get('cart', {})
+    if not cart:
+        messages.error(request, "Il tuo carrello è vuoto.")
+        return redirect('product_list')
+
+    user = request.user
+
+    if request.method == 'POST':
+        # Processare il form dell'indirizzo
+        street_address = request.POST.get('street_address', '').strip()
+        city = request.POST.get('city', '').strip()
+        postal_code = request.POST.get('postal_code', '').strip()
+        country = request.POST.get('country', '').strip()
+        save_as_default = request.POST.get('save_as_default') == '1'
+
+        # Validazione dei campi obbligatori
+        if not all([street_address, city, postal_code, country]):
+            messages.error(request, 'Please fill in all required fields.')
+            return render(request, 'checkout.html', {
+                'suggested_address': get_suggested_address(user)[0],
+                'address_source': get_suggested_address(user)[1],
+                'form_data': request.POST
+            })
+
+        # Salva l'indirizzo nella sessione per il prossimo step
+        request.session['checkout_address'] = {
+            'street_address': street_address,
+            'city': city,
+            'postal_code': postal_code,
+            'country': country,
+            'save_as_default': save_as_default
+        }
+
+        # Redirect al processamento dell'ordine
+        return redirect('checkout_process')
+
+    # GET request - mostrare il form dell'indirizzo
+    suggested_address, address_source = get_suggested_address(user)
+
+    context = {
+        'suggested_address': suggested_address,
+        'address_source': address_source,
+    }
+
+    return render(request, 'orders/checkout.html', context)
+
+
+@login_required
+def checkout_process(request):
+    """
+    Step 2: Processamento dell'ordine con l'indirizzo dalla sessione
+    Questa è la tua funzione checkout esistente, modificata per usare l'indirizzo dalla sessione
+    """
+    from django.db import transaction
+    from decimal import Decimal
+
+    # Verifica che ci sia un indirizzo nella sessione
+    checkout_address = request.session.get('checkout_address')
+    if not checkout_address:
+        messages.error(request, "Indirizzo di spedizione mancante.")
+        return redirect('checkout_address')
+
     cart = request.session.get('cart', {})
     if not cart:
         messages.error(request, "Il tuo carrello è vuoto.")
@@ -198,12 +304,17 @@ def checkout(request):
         # Calcola il totale finale
         final_total = subtotal - promo_discount_amount
 
-        # Crea l'ordine
+        # Crea l'ordine CON L'INDIRIZZO DALLA SESSIONE
         order = Order.objects.create(
             user=request.user,
             total_amount=final_total,
             promo_code_used=applied_promo if promo_code else '',
-            discount_amount=promo_discount_amount
+            discount_amount=promo_discount_amount,
+            # Aggiungi i campi dell'indirizzo
+            street_address=checkout_address['street_address'],
+            city=checkout_address['city'],
+            postal_code=checkout_address['postal_code'],
+            country=checkout_address['country'],
         )
 
         # Crea gli items dell'ordine e aggiorna lo stock
@@ -231,10 +342,22 @@ def checkout(request):
                 promo_code.used_count += 1
                 promo_code.save()
 
-        # Svuota il carrello e rimuovi il promo code dalla sessione
+        # Salva l'indirizzo come predefinito se richiesto
+        if checkout_address['save_as_default']:
+            user = request.user
+            user.street_address = checkout_address['street_address']
+            user.city = checkout_address['city']
+            user.postal_code = checkout_address['postal_code']
+            user.country = checkout_address['country']
+            user.save()
+            messages.success(request, 'Your address has been saved as default.')
+
+        # Svuota il carrello, rimuovi il promo code e l'indirizzo dalla sessione
         del request.session['cart']
         if 'applied_promo_code' in request.session:
             del request.session['applied_promo_code']
+        if 'checkout_address' in request.session:
+            del request.session['checkout_address']
 
         messages.success(request, f'Ordine completato con successo! Totale: €{final_total}')
         return redirect('order_success', order_id=order.id)

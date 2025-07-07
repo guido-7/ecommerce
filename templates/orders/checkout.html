@@ -1,0 +1,475 @@
+{% extends 'base.html' %}
+
+{% block extra_css %}
+<style>
+  .hero-section {
+    background: linear-gradient(135deg, #4e73df 0%, #1c3faa 100%);
+    color: white;
+    padding: 2rem 0;
+    border-radius: 0.75rem;
+    margin-bottom: 2rem;
+    text-align: center;
+  }
+
+  .hero-section h2 {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  .hero-section p {
+    opacity: 0.9;
+    font-size: 1.1rem;
+  }
+
+  .checkout-container {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .checkout-card {
+    background: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    overflow: hidden;
+    margin-bottom: 2rem;
+  }
+
+  .suggested-address {
+    background: linear-gradient(135deg, #e8f5e8 0%, #f0f8f0 100%);
+    border: 2px solid #27ae60;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(39, 174, 96, 0.1);
+  }
+
+  .suggested-address::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(39, 174, 96, 0.1) 0%, transparent 70%);
+    animation: shimmer 3s ease-in-out infinite;
+  }
+
+  @keyframes shimmer {
+    0%, 100% { transform: rotate(0deg); }
+    50% { transform: rotate(180deg); }
+  }
+
+  .suggested-address h3 {
+    color: #27ae60;
+    margin-bottom: 1rem;
+    font-size: 1.3rem;
+    font-weight: 600;
+    position: relative;
+    z-index: 1;
+  }
+
+  .suggested-address .address-text {
+    font-size: 1.1rem;
+    color: #2c3e50;
+    margin-bottom: 1rem;
+    line-height: 1.6;
+    position: relative;
+    z-index: 1;
+    font-weight: 500;
+  }
+
+  .btn-use-suggested {
+    background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 1;
+  }
+
+  .btn-use-suggested:hover {
+    background: linear-gradient(135deg, #219a52 0%, #27ae60 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
+  }
+
+  .address-source {
+    font-size: 0.9rem;
+    color: #7f8c8d;
+    font-style: italic;
+    margin-top: 0.5rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  .form-container {
+    padding: 2rem;
+  }
+
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+
+  .form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 1rem;
+  }
+
+  .form-control {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 2px solid #e3e6f0;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    background: rgba(255, 255, 255, 0.9);
+    font-weight: 500;
+  }
+
+  .form-control:focus {
+    outline: none;
+    border-color: #4e73df;
+    box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+    transform: translateY(-1px);
+  }
+
+  .form-control.filled {
+    background-color: #e8f5e8;
+    border-color: #27ae60;
+  }
+
+  .row {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 0;
+  }
+
+  .col-half {
+    flex: 1;
+  }
+
+  .checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 1.5rem 0;
+    padding: 1rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 0.5rem;
+    border: 2px solid #dee2e6;
+    transition: all 0.3s ease;
+  }
+
+  .checkbox-group:hover {
+    border-color: #4e73df;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 10px rgba(78, 115, 223, 0.1);
+  }
+
+  .checkbox-group input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    accent-color: #4e73df;
+    cursor: pointer;
+  }
+
+  .checkbox-group .form-label {
+    margin: 0;
+    font-weight: 500;
+    color: #495057;
+    cursor: pointer;
+  }
+
+  .btn-submit {
+    background: linear-gradient(135deg, #4e73df 0%, #1c3faa 100%);
+    color: white;
+    border: none;
+    padding: 1rem 2rem;
+    border-radius: 0.5rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-submit::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    transition: all 0.6s ease;
+    transform: translate(-50%, -50%);
+  }
+
+  .btn-submit:hover::before {
+    width: 300px;
+    height: 300px;
+  }
+
+  .btn-submit:hover {
+    background: linear-gradient(135deg, #3a5fd8 0%, #1530aa 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(78, 115, 223, 0.4);
+  }
+
+  .btn-submit span {
+    position: relative;
+    z-index: 1;
+  }
+
+  .form-validation-error {
+    border-color: #e74c3c !important;
+    box-shadow: 0 0 0 0.2rem rgba(231, 76, 60, 0.25) !important;
+  }
+
+  .form-validation-success {
+    border-color: #27ae60 !important;
+    box-shadow: 0 0 0 0.2rem rgba(39, 174, 96, 0.25) !important;
+  }
+
+  .security-info {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: 2px solid #dee2e6;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-top: 1.5rem;
+    text-align: center;
+    color: #6c757d;
+    font-size: 0.9rem;
+  }
+
+  .security-info i {
+    color: #4e73df;
+    margin-right: 0.5rem;
+  }
+
+  @media (max-width: 768px) {
+    .row {
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .form-container {
+      padding: 1.5rem;
+    }
+
+    .hero-section {
+      padding: 1.5rem;
+    }
+
+    .hero-section h2 {
+      font-size: 1.8rem;
+    }
+
+    .suggested-address {
+      padding: 1rem;
+    }
+  }
+
+  @media (max-width: 576px) {
+    .checkout-container {
+      margin: 0 1rem;
+    }
+
+    .form-container {
+      padding: 1rem;
+    }
+
+    .suggested-address {
+      padding: 1rem;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="hero-section">
+  <div class="container">
+    <h2><i class="fas fa-shopping-cart me-2"></i>Complete Your Order</h2>
+    <p>Enter your shipping information to finalize your purchase</p>
+  </div>
+</div>
+
+<div class="checkout-container">
+  <div class="checkout-card">
+    <div class="form-container">
+      <!-- Suggested Address Section -->
+      {% if suggested_address %}
+      <div class="suggested-address">
+        <h3><i class="fas fa-lightbulb me-2"></i>Suggested Address</h3>
+        <div class="address-text">
+          {{ suggested_address.street_address }}<br>
+          {{ suggested_address.city }}, {{ suggested_address.postal_code }}<br>
+          {{ suggested_address.country }}
+        </div>
+        <div class="address-source">
+          <i class="fas fa-info-circle me-1"></i>
+          {% if address_source == 'user_profile' %}
+            From your profile
+          {% elif address_source == 'last_order' %}
+            From your last order
+          {% endif %}
+        </div>
+        <button type="button" class="btn-use-suggested" onclick="useSuggestedAddress()">
+          <i class="fas fa-check me-2"></i>Use This Address
+        </button>
+      </div>
+      {% endif %}
+
+      <!-- Checkout Form -->
+      <form method="post" action="{% url 'checkout' %}">
+        {% csrf_token %}
+
+        <div class="form-group">
+          <label for="street_address" class="form-label">
+            <i class="fas fa-map-marker-alt me-2"></i>Street Address *
+          </label>
+          <input type="text" id="street_address" name="street_address" class="form-control" required>
+        </div>
+
+        <div class="row">
+          <div class="col-half">
+            <div class="form-group">
+              <label for="city" class="form-label">
+                <i class="fas fa-city me-2"></i>City *
+              </label>
+              <input type="text" id="city" name="city" class="form-control" required>
+            </div>
+          </div>
+          <div class="col-half">
+            <div class="form-group">
+              <label for="postal_code" class="form-label">
+                <i class="fas fa-mail-bulk me-2"></i>ZIP Code *
+              </label>
+              <input type="text" id="postal_code" name="postal_code" class="form-control" required>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="country" class="form-label">
+            <i class="fas fa-globe me-2"></i>Country *
+          </label>
+          <input type="text" id="country" name="country" class="form-control" required>
+        </div>
+
+        <div class="checkbox-group">
+          <input type="checkbox" id="save_as_default" name="save_as_default" value="1">
+          <label for="save_as_default" class="form-label">
+            <i class="fas fa-save me-2"></i>Save this as my default address
+          </label>
+        </div>
+
+        <button type="submit" class="btn-submit">
+          <span><i class="fas fa-shopping-bag me-2"></i>Complete Order</span>
+        </button>
+
+        <div class="security-info">
+          <i class="fas fa-shield-alt"></i>
+          Your information is secure and encrypted. We respect your privacy.
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Store suggested address data
+  const suggestedAddress = {
+    {% if suggested_address %}
+    street_address: "{{ suggested_address.street_address|escapejs }}",
+    city: "{{ suggested_address.city|escapejs }}",
+    postal_code: "{{ suggested_address.postal_code|escapejs }}",
+    country: "{{ suggested_address.country|escapejs }}"
+    {% endif %}
+  };
+
+  function useSuggestedAddress() {
+    if (suggestedAddress.street_address) {
+      document.getElementById('street_address').value = suggestedAddress.street_address;
+      document.getElementById('city').value = suggestedAddress.city;
+      document.getElementById('postal_code').value = suggestedAddress.postal_code;
+      document.getElementById('country').value = suggestedAddress.country;
+
+      // Add visual feedback
+      const inputs = document.querySelectorAll('input[type="text"]');
+      inputs.forEach(input => {
+        input.classList.add('filled');
+        setTimeout(() => {
+          input.classList.remove('filled');
+        }, 2000);
+      });
+
+      // Show success message
+      const btn = document.querySelector('.btn-use-suggested');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<i class="fas fa-check me-2"></i>Address Applied!';
+      btn.style.background = 'linear-gradient(135deg, #27ae60 0%, #2ecc71 100%)';
+      
+      setTimeout(() => {
+        btn.innerHTML = originalText;
+        btn.style.background = '';
+      }, 2000);
+    }
+  }
+
+  // Form validation and enhancement
+  document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const inputs = form.querySelectorAll('input[required]');
+
+    inputs.forEach(input => {
+      input.addEventListener('blur', function() {
+        if (this.value.trim() === '') {
+          this.classList.add('form-validation-error');
+          this.classList.remove('form-validation-success');
+        } else {
+          this.classList.add('form-validation-success');
+          this.classList.remove('form-validation-error');
+        }
+      });
+
+      input.addEventListener('focus', function() {
+        this.classList.remove('form-validation-error', 'form-validation-success');
+      });
+    });
+
+    // Form submission enhancement
+    form.addEventListener('submit', function(e) {
+      const submitBtn = document.querySelector('.btn-submit');
+      const originalText = submitBtn.innerHTML;
+      
+      submitBtn.innerHTML = '<span><i class="fas fa-spinner fa-spin me-2"></i>Processing...</span>';
+      submitBtn.disabled = true;
+      
+      // Re-enable after 3 seconds in case of errors
+      setTimeout(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+      }, 3000);
+    });
+  });
+</script>
+{% endblock %}
