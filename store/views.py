@@ -246,7 +246,7 @@ class StoreManagerRequiredMixin(UserPassesTestMixin):
 
 class ProductCreateView(StoreManagerRequiredMixin, CreateView):
     model = Product
-    fields = ['category', 'name', 'description', 'price', 'stock']
+    fields = ['category', 'name', 'brand', 'description', 'price', 'stock']
     template_name = 'store/product_form.html'
     success_url = reverse_lazy('product_list')
 
@@ -685,7 +685,7 @@ class CategoryDeleteView(StoreManagerRequiredMixin, DeleteView):
 class BrandCreateView(StoreManagerRequiredMixin, CreateView):
     model = Brand
     form_class = CategoryForm
-    template_name = 'store/brand_form.html'
+    template_name = 'store/category_form.html'
     success_url = reverse_lazy('manage')
 
     def form_valid(self, form):
