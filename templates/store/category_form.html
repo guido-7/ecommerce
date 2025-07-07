@@ -45,17 +45,17 @@
             </div>
 
             <div class="mb-3">
-                <p class="form-text">Lo "slug" (la parte dell'URL) sarà generato automaticamente dal nome.</p>
+                <p class="form-text">The "slug" (the URL part) will be automatically generated from the name.</p>
             </div>
 
             <div class="text-center mt-4">
                 <button type="submit" class="btn btn-primary btn-lg me-3">
                     <i class="fas fa-save me-2"></i>
-                    {% if form.instance.pk %}Aggiorna{% else %}Salva{% endif %} Categoria
+                    {% if form.instance.pk %}Update{% else %}Save{% endif %} {{ type }}
                 </button>
                 <a href="{% url 'manage' %}" class="btn btn-secondary btn-lg">
                     <i class="fas fa-times me-2"></i>
-                    Annulla
+                    Cancel
                 </a>
             </div>
         </form>

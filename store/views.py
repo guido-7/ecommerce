@@ -635,7 +635,8 @@ class CategoryCreateView(StoreManagerRequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['page_title'] = 'Aggiungi Nuova Categoria'
+        context['page_title'] = 'Add New Category'
+        context['type'] = 'Category'
         return context
 
 class CategoryUpdateView(StoreManagerRequiredMixin, UpdateView):
@@ -659,7 +660,8 @@ class CategoryUpdateView(StoreManagerRequiredMixin, UpdateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['page_title'] = f'Modifica Categoria: {self.object.name}'
+        context['page_title'] = f'Update Category: {self.object.name}'
+        context['type'] = 'Category'
         return context
 
 class CategoryDeleteView(StoreManagerRequiredMixin, DeleteView):
@@ -697,7 +699,8 @@ class BrandCreateView(StoreManagerRequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['page_title'] = 'Aggiungi Nuovo Brand'
+        context['page_title'] = 'Add new Brand'
+        context['type'] = 'Brand'
         return context
 
 class BrandUpdateView(StoreManagerRequiredMixin, UpdateView):
@@ -717,7 +720,8 @@ class BrandUpdateView(StoreManagerRequiredMixin, UpdateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['page_title'] = f'Modifica Brand: {self.object.name}'
+        context['page_title'] = f'Update Brand: {self.object.name}'
+        context['type'] = 'Brand'
         return context
 
 class BrandDeleteView(StoreManagerRequiredMixin, DeleteView):
