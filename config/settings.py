@@ -57,7 +57,6 @@ INSTALLED_APPS = [
     # third-party apps
     'cloudinary',
     'cloudinary_storage',
-    'whitenoise.runserver_nostatic',
 ]
 
 MIDDLEWARE = [
