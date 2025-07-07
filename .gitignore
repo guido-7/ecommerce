@@ -1,0 +1,18 @@
+# Database
+*.sqlite3
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# environment variables
+.env
+
+# PyCharm
+.idea/
+
+*.pyc
+__pycache__/
+staticfiles/
+media/
