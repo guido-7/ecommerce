@@ -56,12 +56,13 @@ class ProductDetailView(DetailView):
 
 def view_cart(request):
     cart = request.session.get('cart', {})
+    cart_copy = cart.copy()
     cart_items = []
     total_price = 0
     subtotal = 0
     total_savings = 0
 
-    for product_id, item_data in cart.items():
+    for product_id, item_data in cart_copy.items():
         try:
             product = Product.objects.get(id=product_id)
         except Product.DoesNotExist:
