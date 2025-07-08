@@ -440,7 +440,7 @@ class ManageView(StoreManagerRequiredMixin, ListView):
     Inherits from ListView to handle pagination and filtering.
     """
     model = Product
-    template_name = 'store/manage.html'
+    template_name = 'dashboard/manage.html'
     context_object_name = 'products'
     paginate_by = 10
 

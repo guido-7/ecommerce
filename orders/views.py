@@ -19,7 +19,7 @@ class StoreManagerRequiredMixin(UserPassesTestMixin):
 
 class OrderManagementView(StoreManagerRequiredMixin, ListView):
     model = Order
-    template_name = 'store/manage.html'
+    template_name = 'dashboard/manage.html'
     context_object_name = 'orders'
     paginate_by = 25
 
