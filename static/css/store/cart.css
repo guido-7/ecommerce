@@ -1,0 +1,125 @@
+.cart-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+.product-card {
+    border: none;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    margin-bottom: 20px;
+}
+.product-image {
+    height: 120px;
+    object-fit: contain;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+}
+.product-name {
+    font-weight: 600;
+    font-size: 1.1rem;
+    margin-bottom: 5px;
+}
+.availability {
+    font-size: 0.85rem;
+    color: #28a745;
+    font-weight: 500;
+}
+.original-price {
+    text-decoration: line-through;
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+.discounted-price {
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: #212529;
+}
+.quantity-control {
+    display: flex;
+    align-items: center;
+    margin-top: 10px;
+}
+.quantity-btn {
+    width: 30px;
+    height: 30px;
+    border: 1px solid #ced4da;
+    background: white;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+.quantity-input {
+    width: 45px;
+    height: 30px;
+    text-align: center;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    margin: 0 5px;
+}
+.action-links a {
+    font-size: 0.85rem;
+    margin-right: 15px;
+    color: #6c757d;
+}
+.action-links a.remove {
+    color: #dc3545;
+}
+.action-links a:hover {
+    text-decoration: underline;
+}
+.summary-card {
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+.summary-title {
+    font-weight: 600;
+    font-size: 1.25rem;
+    margin-bottom: 20px;
+}
+.promo-input-group .btn {
+    background-color: #e9ecef;
+    border-color: #ced4da;
+    color: #495057;
+}
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    font-size: 0.95rem;
+}
+.summary-total {
+    font-weight: 600;
+    font-size: 1.1rem;
+    border-top: 1px solid #e9ecef;
+    padding-top: 12px;
+    margin-top: 8px;
+}
+.installment-info {
+    font-size: 0.85rem;
+    margin: 15px 0;
+    color: #6c757d;
+}
+.checkout-btn {
+    background-color: #28a745;
+    border: none;
+    padding: 12px;
+    font-weight: 600;
+    font-size: 1rem;
+}
+.checkout-btn:hover {
+    background-color: #218838;
+}
+.savings {
+    color: #dc3545;
+}
+.empty-cart-message {
+    text-align: center;
+    padding: 40px 0;
+}
+.form-update-quantity {
+    display: inline;
+}
