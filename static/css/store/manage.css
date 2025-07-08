@@ -1,0 +1,32 @@
+.sortable-header {
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    transition: background-color 0.2s ease;
+}
+
+.sortable-header:hover {
+    background-color: rgba(0, 123, 255, 0.1);
+}
+
+.sort-arrows {
+    display: inline-flex;
+    flex-direction: column;
+    margin-left: 8px;
+    line-height: 1;
+}
+
+.sort-arrow {
+    font-size: 10px;
+    color: #6c757d;
+    transition: color 0.2s ease;
+}
+
+.sort-arrow.active {
+    color: #007bff;
+    font-weight: bold;
+}
+
+.sort-arrow:first-child {
+    margin-bottom: -2px;
+}
