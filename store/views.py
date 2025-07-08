@@ -248,7 +248,7 @@ class ProductCreateView(StoreManagerRequiredMixin, CreateView):
     model = Product
     fields = ['category', 'name', 'brand', 'description', 'price', 'discounted_price', 'stock']
     template_name = 'dashboard/product_form.html'
-    success_url = reverse_lazy('product_list')
+    success_url = reverse_lazy('manage')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -321,7 +321,7 @@ class ProductUpdateView(StoreManagerRequiredMixin, UpdateView):
     model = Product
     fields = ['category', 'name', 'brand', 'description', 'price', 'discounted_price', 'stock']
     template_name = 'dashboard/product_form.html'
-    success_url = reverse_lazy('product_list')
+    success_url = reverse_lazy('manage')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
