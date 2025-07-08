@@ -14,7 +14,7 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, D
 from . import models
 from .models import Product, ProductImage, Category, Brand, PromoCode
 from orders.models import Order, OrderItem
-from .forms import CategoryForm, PromoCodeForm
+from .forms import CategoryForm, PromoCodeForm, BrandForm
 
 
 class ProductListView(ListView):
@@ -744,7 +744,7 @@ class CategoryDeleteView(StoreManagerRequiredMixin, DeleteView):
 # === BRAND MANAGEMENT ===
 class BrandCreateView(StoreManagerRequiredMixin, CreateView):
     model = Brand
-    form_class = CategoryForm
+    form_class = BrandForm
     template_name = 'store/category_form.html'
     success_url = reverse_lazy('manage')
 
@@ -763,7 +763,7 @@ class BrandCreateView(StoreManagerRequiredMixin, CreateView):
 
 class BrandUpdateView(StoreManagerRequiredMixin, UpdateView):
     model = Brand
-    form_class = CategoryForm
+    form_class = BrandForm
     template_name = 'store/category_form.html'
     success_url = reverse_lazy('manage')
 

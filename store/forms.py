@@ -1,5 +1,5 @@
 from django import forms
-from .models import Category, Product, ProductImage
+from .models import Category, Brand
 
 class CategoryForm(forms.ModelForm):
     """
@@ -10,10 +10,10 @@ class CategoryForm(forms.ModelForm):
         model = Category
         fields = ['name']
         widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Es. T-shirt, Tazze, Accessori'}),
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Es. TV, Phone, PC'}),
         }
         labels = {
-            'name': 'Nome Categoria',
+            'name': 'Name Category',
         }
 
     def clean_name(self):
@@ -25,10 +25,41 @@ class CategoryForm(forms.ModelForm):
         instance = self.instance
         if instance and instance.pk:
             if Category.objects.filter(name__iexact=name).exclude(pk=instance.pk).exists():
-                raise forms.ValidationError("Una categoria con questo nome esiste già.")
+                raise forms.ValidationError("A category with this name already exists.")
         # On create
         elif Category.objects.filter(name__iexact=name).exists():
-            raise forms.ValidationError("Una categoria con questo nome esiste già.")
+            raise forms.ValidationError("A category with this name already exists.")
+        return name
+
+
+class BrandForm(forms.ModelForm):
+    """
+        Form for creating and updating a Brand.
+        The slug is handled automatically in the view.
+    """
+    class Meta:
+        model = Brand
+        fields = ['name']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Es. Apple, Samsung, Dell'}),
+        }
+        labels = {
+            'name': 'Name Brand',
+        }
+
+    def clean_name(self):
+        """
+        Ensures the brand name is unique (case-insensitive).
+        """
+        name = self.cleaned_data.get('name')
+        # On update, exclude the current instance from the check
+        instance = self.instance
+        if instance and instance.pk:
+            if Brand.objects.filter(name__iexact=name).exclude(pk=instance.pk).exists():
+                raise forms.ValidationError("A brand with this name already exists.")
+        # On create
+        elif Category.objects.filter(name__iexact=name).exists():
+            raise forms.ValidationError("A brand with this name already exists.")
         return name
 
 
@@ -38,7 +69,7 @@ class PromoCodeForm(forms.Form):
         max_length=20,
         widget=forms.TextInput(
             attrs={
-                'placeholder': 'Inserisci il codice promo',
+                'placeholder': 'Enter the promo code',
                 'class': 'form-control'
             }
         )
