@@ -419,7 +419,7 @@ class ProductDeleteView(StoreManagerRequiredMixin, DeleteView):
     View to delete a product with a confirmation step.
     """
     model = Product
-    template_name = 'store/confirm_delete.html'
+    template_name = 'dashboard/confirm_delete.html'
     success_url = reverse_lazy('manage')
 
     def get_context_data(self, **kwargs):
@@ -727,7 +727,7 @@ class CategoryDeleteView(StoreManagerRequiredMixin, DeleteView):
     View to delete a category with a confirmation step.
     """
     model = Category
-    template_name = 'store/confirm_delete.html'
+    template_name = 'dashboard/confirm_delete.html'
     success_url = reverse_lazy('manage')
 
     def get_context_data(self, **kwargs):
@@ -784,7 +784,7 @@ class BrandUpdateView(StoreManagerRequiredMixin, UpdateView):
 
 class BrandDeleteView(StoreManagerRequiredMixin, DeleteView):
     model = Brand
-    template_name = 'store/confirm_delete.html'
+    template_name = 'dashboard/confirm_delete.html'
     success_url = reverse_lazy('manage')
 
     def get_context_data(self, **kwargs):
