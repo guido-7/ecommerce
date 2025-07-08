@@ -62,7 +62,10 @@ def view_cart(request):
     total_savings = 0
 
     for product_id, item_data in cart.items():
-        product = Product.objects.get(id=product_id)
+        try:
+            product = Product.objects.get(id=product_id)
+        except Product.DoesNotExist:
+            continue  # salta il prodotto e prosegui
         actual_price = product.get_actual_price()
         total_item_price = actual_price * item_data['quantity']
         if product.discounted_price:
