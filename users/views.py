@@ -19,4 +19,4 @@ def register(request):
             return redirect('product_list')
     else:
         form = CustomUserCreationForm()
-    return render(request, 'registration/register.html', {'form': form})
+    return render(request, 'auth/signup.html', {'form': form})
