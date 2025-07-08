@@ -678,7 +678,7 @@ class CategoryCreateView(StoreManagerRequiredMixin, CreateView):
     """
     model = Category
     form_class = CategoryForm
-    template_name = 'store/category_form.html'
+    template_name = 'dashboard/category_form.html'
     success_url = reverse_lazy('manage')
 
     def form_valid(self, form):
@@ -703,7 +703,7 @@ class CategoryUpdateView(StoreManagerRequiredMixin, UpdateView):
     """
     model = Category
     form_class = CategoryForm
-    template_name = 'store/category_form.html'
+    template_name = 'dashboard/category_form.html'
     success_url = reverse_lazy('manage')
 
     def form_valid(self, form):
@@ -745,7 +745,7 @@ class CategoryDeleteView(StoreManagerRequiredMixin, DeleteView):
 class BrandCreateView(StoreManagerRequiredMixin, CreateView):
     model = Brand
     form_class = BrandForm
-    template_name = 'store/category_form.html'
+    template_name = 'dashboard/category_form.html'
     success_url = reverse_lazy('manage')
 
     def form_valid(self, form):
@@ -764,7 +764,7 @@ class BrandCreateView(StoreManagerRequiredMixin, CreateView):
 class BrandUpdateView(StoreManagerRequiredMixin, UpdateView):
     model = Brand
     form_class = BrandForm
-    template_name = 'store/category_form.html'
+    template_name = 'dashboard/category_form.html'
     success_url = reverse_lazy('manage')
 
     def form_valid(self, form):
