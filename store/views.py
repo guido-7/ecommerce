@@ -8,7 +8,6 @@ from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy, reverse
 from django.utils.text import slugify
-from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 
@@ -244,9 +243,10 @@ class StoreManagerRequiredMixin(UserPassesTestMixin):
     def test_func(self):
         return self.request.user.is_authenticated and self.request.user.groups.filter(name='Store Manager').exists()
 
+
 class ProductCreateView(StoreManagerRequiredMixin, CreateView):
     model = Product
-    fields = ['category', 'name', 'brand', 'description', 'price', 'stock']
+    fields = ['category', 'name', 'brand', 'description', 'price', 'discounted_price', 'stock']
     template_name = 'store/product_form.html'
     success_url = reverse_lazy('product_list')
 
@@ -255,6 +255,15 @@ class ProductCreateView(StoreManagerRequiredMixin, CreateView):
         # Per la creazione, non ci sono immagini esistenti
         context['existing_images'] = []
         return context
+
+    def form_valid(self, form):
+        # Validazione prezzo scontato
+        if form.cleaned_data.get('discounted_price'):
+            if form.cleaned_data['discounted_price'] >= form.cleaned_data['price']:
+                form.add_error('discounted_price', 'Il prezzo scontato deve essere inferiore al prezzo originale.')
+                return self.form_invalid(form)
+
+        return super().form_valid(form)
 
     def post(self, request, *args, **kwargs):
         form = self.get_form()
@@ -273,6 +282,15 @@ class ProductCreateView(StoreManagerRequiredMixin, CreateView):
                     'existing_images': []
                 })
 
+            # Validazione prezzo scontato
+            if form.cleaned_data.get('discounted_price'):
+                if form.cleaned_data['discounted_price'] >= form.cleaned_data['price']:
+                    form.add_error('discounted_price', 'Il prezzo scontato deve essere inferiore al prezzo originale.')
+                    return render(request, self.template_name, {
+                        'form': form,
+                        'existing_images': []
+                    })
+
             # Salva il prodotto
             product = form.save()
 
@@ -283,7 +301,14 @@ class ProductCreateView(StoreManagerRequiredMixin, CreateView):
                     image=image_file
                 )
 
-            messages.success(request, f'Prodotto "{product.name}" creato con successo!')
+            # Messaggio di successo con informazioni sul sconto
+            success_message = f'Prodotto "{product.name}" creato con successo!'
+            if product.discounted_price:
+                savings = product.price - product.discounted_price
+                savings_percent = (savings / product.price) * 100
+                success_message += f' Sconto applicato: €{savings:.2f} ({savings_percent:.0f}%)'
+
+            messages.success(request, success_message)
             return redirect(self.success_url)
 
         return render(request, self.template_name, {
@@ -294,7 +319,7 @@ class ProductCreateView(StoreManagerRequiredMixin, CreateView):
 
 class ProductUpdateView(StoreManagerRequiredMixin, UpdateView):
     model = Product
-    fields = ['category', 'name', 'description', 'price', 'stock']
+    fields = ['category', 'name', 'brand', 'description', 'price', 'discounted_price', 'stock']
     template_name = 'store/product_form.html'
     success_url = reverse_lazy('product_list')
 
@@ -302,6 +327,15 @@ class ProductUpdateView(StoreManagerRequiredMixin, UpdateView):
         context = super().get_context_data(**kwargs)
         context['existing_images'] = self.object.images.all()
         return context
+
+    def form_valid(self, form):
+        # Validazione prezzo scontato
+        if form.cleaned_data.get('discounted_price'):
+            if form.cleaned_data['discounted_price'] >= form.cleaned_data['price']:
+                form.add_error('discounted_price', 'Il prezzo scontato deve essere inferiore al prezzo originale.')
+                return self.form_invalid(form)
+
+        return super().form_valid(form)
 
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
@@ -337,6 +371,15 @@ class ProductUpdateView(StoreManagerRequiredMixin, UpdateView):
                     'existing_images': self.object.images.all()
                 })
 
+            # Validazione prezzo scontato
+            if form.cleaned_data.get('discounted_price'):
+                if form.cleaned_data['discounted_price'] >= form.cleaned_data['price']:
+                    form.add_error('discounted_price', 'Il prezzo scontato deve essere inferiore al prezzo originale.')
+                    return render(request, self.template_name, {
+                        'form': form,
+                        'existing_images': self.object.images.all()
+                    })
+
             # Salva il prodotto
             product = form.save()
 
@@ -347,13 +390,28 @@ class ProductUpdateView(StoreManagerRequiredMixin, UpdateView):
                     image=image_file
                 )
 
-            messages.success(request, f'Prodotto "{product.name}" aggiornato con successo!')
+            # Messaggio di successo con informazioni sul sconto
+            success_message = f'Prodotto "{product.name}" aggiornato con successo!'
+            if product.discounted_price:
+                savings = product.price - product.discounted_price
+                savings_percent = (savings / product.price) * 100
+                success_message += f' Sconto applicato: €{savings:.2f} ({savings_percent:.0f}%)'
+            elif hasattr(self.object, '_original_discounted_price') and self.object._original_discounted_price:
+                success_message += ' Sconto rimosso.'
+
+            messages.success(request, success_message)
             return redirect(self.success_url)
 
         return render(request, self.template_name, {
             'form': form,
             'existing_images': self.object.images.all()
         })
+
+    def get_object(self, queryset=None):
+        obj = super().get_object(queryset)
+        # Memorizza il valore originale per confronto
+        obj._original_discounted_price = obj.discounted_price
+        return obj
 
 
 class ProductDeleteView(StoreManagerRequiredMixin, DeleteView):
