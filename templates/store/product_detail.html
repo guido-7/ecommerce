@@ -2,6 +2,22 @@
 {% load static %}
 
 {% block content %}
+<style>
+    .original-price{
+    text-decoration: line-through;
+    color: #6c757d;
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+}
+
+.product-price {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #4e73df;
+    margin-bottom: 1rem;
+}
+</style>
+
 <div class="row">
     <div class="col-md-6">
         <!-- Immagine principale -->
@@ -25,7 +41,12 @@
         <h1>{{ product.name }}</h1>
         <p class="lead text-muted">{{ product.category.name }}</p>
         <hr>
-        <h3>${{ product.price }}</h3>
+        <h3>
+            {% if product.discounted_price %}
+            <span class="original-price" style="text-decoration: line-through;">{{ product.price }} €</span>
+            {% endif %}
+            <span class="product-price">{{ product.get_actual_price }} €</span>
+        </h3>
         <p>{{ product.description }}</p>
         <p>
             {% if product.stock > 0 %}
