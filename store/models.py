@@ -1,5 +1,4 @@
 from cloudinary.models import CloudinaryField
-from cloudinary.uploader import destroy
 from django.db import models
 from django.utils import timezone
 

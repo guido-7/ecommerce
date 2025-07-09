@@ -21,7 +21,7 @@ class ProductListView(ListView):
     model = Product
     template_name = 'store/product_list.html'
     context_object_name = 'products'
-    paginate_by = 8 # Show 8 products per page
+    paginate_by = 9 # Show 9 products per page
 
     def get_queryset(self):
         queryset = super().get_queryset().order_by('-created_at')
