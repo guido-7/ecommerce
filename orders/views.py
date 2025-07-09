@@ -231,8 +231,7 @@ def checkout_address(request):
 @login_required
 def checkout_process(request):
     """
-    Step 2: Processamento dell'ordine con l'indirizzo dalla sessione
-    Questa è la tua funzione checkout esistente, modificata per usare l'indirizzo dalla sessione
+    Step 2: Elaborazione dell'ordine con l'indirizzo dalla sessione
     """
     from django.db import transaction
     from decimal import Decimal
@@ -272,6 +271,7 @@ def checkout_process(request):
 
                 cart_items.append({
                     'product': product,
+                    'product_name': product.name,
                     'quantity': quantity,
                     'price': actual_price,
                     'total': item_total
@@ -395,13 +395,7 @@ class OrderHistoryView(LoginRequiredMixin, ListView):
         ).order_by('-created_at')
 
     def get_context_data(self, **kwargs):
-        """
-        Aggiunge contesto extra se necessario
-        """
         context = super().get_context_data(**kwargs)
-
-        # Puoi aggiungere dati extra al contesto se necessario
-        # Ad esempio, statistiche generali sugli ordini
         context['total_orders'] = self.get_queryset().count()
 
         return context

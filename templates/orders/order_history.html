@@ -45,15 +45,13 @@
                         {% for item in order.items.all %}
                         <li class="mb-2">
                             <div class="d-flex justify-content-between">
-                                <span>{{ item.quantity }} x {{ item.product.name }}</span>
+                                {% if item.product %}
+                                <span>{{ item.quantity }} x <a href="{% url 'product_detail' item.product.id %}" class="btn btn-link p-0 m-0 align-baseline">{{ item.product.name }}</a></span>
+                                {% else %}
+                                <span>{{ item.quantity }} x {{ item.product_name }}</span>
+                                {% endif %}
                                 <span>€{{ item.price|floatformat:2 }} each</span>
                             </div>
-                            {% if item.product.discounted_price %}
-                                <small class="text-muted">
-                                    <del>€{{ item.product.price|floatformat:2 }}</del>
-                                    Discounted price applied
-                                </small>
-                            {% endif %}
                         </li>
                         {% endfor %}
                     </ul>
@@ -90,7 +88,6 @@
                 </div>
             </div>
 
-            <!-- Status badge rimosso da qui -->
         </div>
     </div>
     {% empty %}
