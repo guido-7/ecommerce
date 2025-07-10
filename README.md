@@ -89,3 +89,41 @@ This project has been developed to meet the functional and structural criteria d
 
 - **Automatic cart cleanup**  
   If a product in the shopping cart has been deleted from the store, it is automatically removed to prevent invalid purchases.
+
+## Setup
+
+1. **Clone the repository**
+
+```bash
+git clone https://github.com/guido-7/ecommerce.git
+```
+
+2. **Create the environment file**
+
+Before running the project, copy the provided environment configuration file and customize it:
+ 
+```bash
+cp example.env .env
+```
+
+Edit `.env` with your own values.
+
+3. **Create and activate a virtual environment**
+
+```bash
+conda create --name ecommerce-env
+conda activate ecommerce-env
+```
+
+4. **Install dependencies**
+
+```bash
+pip install -r requirements.txt
+```
+
+5. **Run migrations**
+
+```bash
+python manage.py migrate
+python manage.py runserver
+```
