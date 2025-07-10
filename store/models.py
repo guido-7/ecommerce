@@ -1,6 +1,8 @@
-from cloudinary.models import CloudinaryField
 from django.db import models
 from django.utils import timezone
+
+from config import settings
+
 
 class Category(models.Model):
     name = models.CharField(max_length=255, unique=True)
@@ -50,7 +52,12 @@ class Product(models.Model):
 
 class ProductImage(models.Model):
     product = models.ForeignKey(Product, related_name='images', on_delete=models.CASCADE)
-    image = CloudinaryField('image', folder='media/products/')
+    # Switch del campo immagine basato sull'ambiente
+    if settings.ENV == 'development':
+        image = models.ImageField(upload_to='products/')
+    else:
+        from cloudinary.models import CloudinaryField
+        image = CloudinaryField('image', folder='media/products/')
 
     def __str__(self):
         return f"Image for {self.product.name}"
@@ -65,6 +72,7 @@ class PromoCode(models.Model):
     def __str__(self):
         return self.code
 
+    @property
     def is_valid(self):
         if not self.valid_from or not self.valid_to:
             return False
