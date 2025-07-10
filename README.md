@@ -9,11 +9,6 @@ University of Florence – 2025
 
 This project is designed to offer a structure for online stores with core features like product browsing, user authentication, shopping cart, and order management.
 
-TODO: rimuovi questo
-Questa applicazione web consente agli utenti di esplorare e acquistare prodotti in un negozio online implementando .
-Gli utenti possono visualizzare i dettagli dei prodotti, aggiungerli al carrello e procedere con l'acquisto. 
-I prodotti possono essere filtrati per categoria o brand e possono essere cercati per nome.
-
 ### Features
 
 - **Product browsing:** View product details including name, description, price, image, category, and brand.
@@ -44,6 +39,11 @@ I prodotti possono essere filtrati per categoria o brand e possono essere cercat
   - Username: admin
   - Password: admin
 
+### Environment Configuration
+
+The project uses the `ENV` variable to switch between development and production environments.
+This allows for different settings such as databases and installed apps, depending on the context in which the project is run.
+
 ## Project Requirements
 
 This project has been developed to meet the functional and structural criteria defined in the exam guidelines.
@@ -64,7 +64,7 @@ This project has been developed to meet the functional and structural criteria d
   - **Customers**: Can browse, purchase, and view their own orders.  
   - **Store managers**: Have access to the admin panel to manage products, categories, brands and orders.
 
-- The **User model is extended and customized** to include additional fields such as saved addresses, profile data, and group-based permissions.
+- The **User model is extended and customized** to include additional fields such as saved addresses and phone number.
 
 ## Extra Features
 
