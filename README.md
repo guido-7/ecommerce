@@ -44,6 +44,15 @@ This project is designed to offer a structure for online stores with core featur
 The project uses the `ENV` variable to switch between development and production environments.
 This allows for different settings such as databases and installed apps, depending on the context in which the project is run.
 
+- When ENV = `development`: 
+  - Uses SQLite as the database (local file db.sqlite3)
+  - Faster performance locally as no external services are required.
+- When ENV = `production`:
+  - Uses PostgreSQL (e.g., Supabase) as the database via DATABASE_URL
+  - Enables additional third-party apps such as:
+    1. cloudinary
+    2. cloudinary_storage
+
 ## Project Requirements
 
 This project has been developed to meet the functional and structural criteria defined in the exam guidelines.
