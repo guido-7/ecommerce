@@ -72,7 +72,6 @@ class PromoCode(models.Model):
     def __str__(self):
         return self.code
 
-    @property
     def is_valid(self):
         if not self.valid_from or not self.valid_to:
             return False
