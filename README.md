@@ -1,5 +1,8 @@
 # E-commerce Web Application
 
+[![Python](https://img.shields.io/badge/python-3.12.11-blue?logo=python)](https://www.python.org/)
+[![Django](https://img.shields.io/badge/django-5.2.3-green?logo=django)](https://www.djangoproject.com/)
+
 **Second Partial Exam – Multimedia Design and Production**  
 University of Florence – 2025
 
@@ -33,11 +36,14 @@ This project is designed to offer a structure for online stores with core featur
 
 - https://ecommerce-p9h8.onrender.com/
 
-### Account Credentials
+### Demo Credentials
 
 - **Admin Account:**
   - Username: admin
   - Password: admin
+
+- **Coupon Code:**
+  - SUMMER5
 
 ### Environment Configuration
 
